@@ -1,5 +1,15 @@
-export function emptyModuleTemplate() {
-    return `import { Module, Snippet, Todo, type SnippetDefinition } from "hokit"
+import type { ModuleTemplateOptions } from "./language"
+
+export function emptyModuleTemplate(options: ModuleTemplateOptions = {}) {
+    const todoImport = options.todo ? ", Todo" : ""
+    const todo = options.todo
+        ? `
+
+    @Todo("Future implementation")
+    declare todo: SnippetDefinition`
+        : ""
+
+    return `import { Module, Snippet${todoImport}, type SnippetDefinition } from "hokit"
 
 @Module({ preset: "empty" })
 export class EmptyModule {
@@ -8,10 +18,7 @@ export class EmptyModule {
         prefix: "empty",
         body: ["$0"]
     })
-    declare example: SnippetDefinition
-
-    @Todo("Implementação futura")
-    declare todo: SnippetDefinition
+    declare example: SnippetDefinition${todo}
 }
 `
 }

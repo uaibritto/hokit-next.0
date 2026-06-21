@@ -13,6 +13,9 @@ import { test } from "node:test"
 
 const root = resolve(import.meta.dirname, "..")
 const cli = join(root, "dist/cli/index.js")
+const packageVersion = JSON.parse(
+    await readFile(join(root, "package.json"), "utf8")
+).version
 
 function run(cwd, ...args) {
     return runWithEnvironment(cwd, args)
@@ -29,6 +32,26 @@ function runWithEnvironment(cwd, args, environment = {}) {
                 ...environment
             }
         })
+        let stdout = ""
+        let stderr = ""
+        child.stdout.on("data", (chunk) => (stdout += chunk))
+        child.stderr.on("data", (chunk) => (stderr += chunk))
+        child.on("close", (code) => resolveRun({ code, stderr, stdout }))
+    })
+}
+
+function runConsumerTypecheck(cwd) {
+    return new Promise((resolveRun) => {
+        const child = spawn(
+            process.execPath,
+            [
+                join(root, "node_modules/typescript/bin/tsc"),
+                "--noEmit",
+                "--project",
+                join(cwd, "tsconfig.json")
+            ],
+            { cwd }
+        )
         let stdout = ""
         let stderr = ""
         child.stdout.on("data", (chunk) => (stdout += chunk))
@@ -74,11 +97,24 @@ test("all CLI commands work in a real project", async () => {
         assert.equal(result.code, 0, result.stderr)
         assert.match(result.stdout, /initialized/)
         const initializedModule = await readFile(
-            join(project, "src/modules/react.ts"),
+            join(project, "src/modules/tsx.ts"),
             "utf8"
         )
-        assert.match(initializedModule, /declare component: SnippetDefinition/)
-        assert.match(initializedModule, /@Todo\("Implementação futura"\)/)
+        assert.match(initializedModule, /declare tsx: SnippetDefinition/)
+        assert.doesNotMatch(initializedModule, /@Todo/)
+
+        result = await run(project, "module", "--todo")
+        assert.equal(result.code, 0, result.stderr)
+        const moduleWithTodo = await readFile(
+            join(project, "src/modules/tsx.ts"),
+            "utf8"
+        )
+        assert.match(moduleWithTodo, /Snippet, Todo, type SnippetDefinition/)
+        assert.match(moduleWithTodo, /@Todo\("Future implementation"\)/)
+        assert.ok(
+            moduleWithTodo.indexOf("@Todo") >
+                moduleWithTodo.indexOf("declare tsx")
+        )
         assert.match(
             await readFile(join(project, ".editorconfig"), "utf8"),
             /indent_size = 4/
@@ -121,27 +157,59 @@ test("all CLI commands work in a real project", async () => {
 
         result = await run(project, "module", "--list")
         assert.equal(result.code, 0, result.stderr)
-        assert.match(result.stdout, /react/)
-        assert.match(result.stdout, /empty/)
+        const availablePresets = [
+            "tsx",
+            "jsx",
+            "swift",
+            "kotlin",
+            "python",
+            "php",
+            "ruby",
+            "rust",
+            "zig",
+            "c",
+            "cpp",
+            "javascript",
+            "empty"
+        ]
+        for (const preset of availablePresets) {
+            assert.match(result.stdout, new RegExp(`^${preset}$`, "m"))
+        }
 
         const configPath = join(project, "hokit.config.ts")
-        const config = await readFile(configPath, "utf8")
         await writeFile(
             configPath,
-            config.replace('presets: ["react"]', 'presets: ["react", "empty"]')
+            (await readFile(configPath, "utf8")).replace(
+                'presets: ["tsx"]',
+                "presets: []"
+            )
+        )
+        await rm(join(project, "src/modules/tsx.ts"))
+
+        result = await run(project, "module", "tsx")
+        assert.equal(result.code, 0, result.stderr)
+        assert.match(await readFile(configPath, "utf8"), /presets:\s*\["tsx"\]/)
+        assert.match(
+            await readFile(join(project, "src/modules/tsx.ts"), "utf8"),
+            /class TsxModule/
         )
 
         result = await run(project, "module", "empty")
         assert.equal(result.code, 0, result.stderr)
+        assert.match(
+            await readFile(configPath, "utf8"),
+            /presets:\s*\["tsx", "empty"\]/
+        )
 
         const emptyModule = join(project, "src/modules/empty.ts")
+        assert.doesNotMatch(await readFile(emptyModule, "utf8"), /@Todo/)
         await writeFile(
             emptyModule,
             `import { Module, Snippet, type SnippetDefinition } from "hokit"
 
 @Module({ preset: "empty" })
 export class EmptyModule {
-    @Snippet({ name: " Padded ", prefix: " pad ", body: [] })
+    @Snippet({ name: " Padded ", prefix: " pad ", body: [], template: true })
     declare example: SnippetDefinition
 }
 `
@@ -154,14 +222,14 @@ export class EmptyModule {
         assert.match(fixed, /name: "Padded"/)
         assert.match(fixed, /body: \["\$0"\]/)
 
-        const duplicateModule = join(project, "src/modules/react-extra.ts")
+        const duplicateModule = join(project, "src/modules/tsx-extra.ts")
         await writeFile(
             duplicateModule,
             `import { Module, Snippet, type SnippetDefinition } from "hokit"
 
-@Module({ preset: "react" })
-export class ReactExtraModule {
-    @Snippet({ name: "Another component", prefix: "rfc", body: ["$0"] })
+@Module({ preset: "tsx" })
+export class TsxExtraModule {
+    @Snippet({ name: "Another TSX", prefix: "tsx", body: ["$0"] })
     declare example: SnippetDefinition
 }
 `
@@ -171,24 +239,70 @@ export class ReactExtraModule {
         assert.match(result.stderr, /Lint found 1 problem/)
         await rm(duplicateModule)
 
+        for (const preset of availablePresets.slice(1, -1)) {
+            result = await run(project, "module", preset)
+            assert.equal(result.code, 0, `${preset}: ${result.stderr}`)
+        }
+        result = await run(project, "module", "javascript", "--todo")
+        assert.equal(result.code, 0, result.stderr)
+        assert.match(
+            await readFile(join(project, "src/modules/javascript.ts"), "utf8"),
+            /@Todo\("Future implementation"\)/
+        )
+
+        const typecheck = await runConsumerTypecheck(project)
+        assert.equal(
+            typecheck.code,
+            0,
+            `${typecheck.stdout}\n${typecheck.stderr}`
+        )
+
         result = await run(project, "build")
         assert.equal(result.code, 0, result.stderr)
-        const reactOutput = JSON.parse(
-            await readFile(join(project, "dist/react.json"), "utf8")
+        const tsxOutput = JSON.parse(
+            await readFile(join(project, "dist/tsx.json"), "utf8")
         )
         const emptyOutput = JSON.parse(
             await readFile(join(project, "dist/empty.json"), "utf8")
         )
-        assert.ok(reactOutput["React component"])
+        assert.ok(tsxOutput.tsx)
         assert.ok(emptyOutput.Padded)
+        assert.equal(tsxOutput.tsx.scope, "typescriptreact")
+        assert.equal(tsxOutput.tsx.description, "tsx")
+        assert.equal(tsxOutput.tsx.isFileTemplate, false)
+        assert.equal(emptyOutput.Padded.isFileTemplate, true)
+        const expectedScopes = {
+            jsx: "javascriptreact",
+            swift: "swift",
+            kotlin: "kotlin",
+            python: "python",
+            php: "php",
+            ruby: "ruby",
+            rust: "rust",
+            zig: "zig",
+            c: "c",
+            cpp: "cpp",
+            javascript: "javascript"
+        }
+        for (const preset of availablePresets.slice(1, -1)) {
+            const snippet = JSON.parse(
+                await readFile(join(project, `dist/${preset}.json`), "utf8")
+            )[preset]
+            assert.ok(snippet)
+            assert.equal(
+                snippet.scope,
+                expectedScopes[preset],
+                `Unexpected scope for ${preset}`
+            )
+        }
 
         result = await run(project, "info")
         assert.equal(result.code, 0, result.stderr)
-        assert.match(result.stdout, /Hokit 3\.0\.0-next\.0/)
+        assert.ok(result.stdout.includes(`Hokit ${packageVersion}`))
 
         result = await run(project, "clean")
         assert.equal(result.code, 0, result.stderr)
-        await assert.rejects(readFile(join(project, "dist/react.json")))
+        await assert.rejects(readFile(join(project, "dist/tsx.json")))
 
         const watch = spawn(process.execPath, [cli, "watch"], {
             cwd: project,
@@ -197,20 +311,20 @@ export class ReactExtraModule {
 
         try {
             await waitForOutput(watch, "Watching files...")
-            const sourcePath = join(project, "src/modules/react.ts")
+            const sourcePath = join(project, "src/modules/tsx.ts")
             const source = await readFile(sourcePath, "utf8")
             const rebuilt = waitForOutput(watch, "Changes detected.")
             await writeFile(
                 sourcePath,
-                source.replace('prefix: "rfc"', 'prefix: "rfc2"')
+                source.replace('prefix: "tsx"', 'prefix: "tsx2"')
             )
             await rebuilt
             await new Promise((resolveDelay) => setTimeout(resolveDelay, 300))
             const watchedOutput = await readFile(
-                join(project, "dist/react.json"),
+                join(project, "dist/tsx.json"),
                 "utf8"
             )
-            assert.match(watchedOutput, /rfc2/)
+            assert.match(watchedOutput, /tsx2/)
         } finally {
             watch.kill("SIGTERM")
         }
@@ -221,7 +335,7 @@ export class ReactExtraModule {
 
         const unsafeConfig = (await readFile(configPath, "utf8")).replace(
             'target: "vscode"',
-            'target: "vscode", overrides: { react: { output: "src/modules/react.ts" } }'
+            'target: "vscode", overrides: { tsx: { output: "src/modules/tsx.ts" } }'
         )
         await writeFile(configPath, unsafeConfig)
         result = await run(project, "doctor")
@@ -229,8 +343,8 @@ export class ReactExtraModule {
         result = await run(project, "clean")
         assert.equal(result.code, 1)
         assert.match(
-            await readFile(join(project, "src/modules/react.ts"), "utf8"),
-            /ReactModule/
+            await readFile(join(project, "src/modules/tsx.ts"), "utf8"),
+            /TsxModule/
         )
     } finally {
         await rm(project, { recursive: true, force: true })

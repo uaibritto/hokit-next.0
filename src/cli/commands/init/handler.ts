@@ -7,9 +7,9 @@ import {
     editorconfigTemplate,
     gitignoreTemplate,
     hokitConfigTemplate,
+    moduleTemplate,
     oxfmtTemplate,
     packageJsonTemplate,
-    reactModuleTemplate,
     tsconfigTemplate,
     vscodeSettingsTemplate
 } from "@hokit/templates"
@@ -96,7 +96,7 @@ export async function initHandler() {
         [".editorconfig", editorconfigTemplate()],
         [".vscode/settings.json", vscodeSettingsTemplate()],
         [".gitignore", gitignoreTemplate()],
-        ["src/modules/react.ts", reactModuleTemplate()]
+        ["src/modules/tsx.ts", moduleTemplate("tsx")]
     ] as const
 
     let created = 0

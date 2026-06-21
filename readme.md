@@ -23,7 +23,7 @@ package.json
 tsconfig.json
 src/
 └── modules/
-    └── react.ts
+    └── tsx.ts
 ```
 
 ## Configuração
@@ -33,11 +33,11 @@ import { defineConfig } from "hokit"
 
 export default defineConfig({
     cwd: "src/modules",
-    presets: ["react"],
+    presets: ["tsx"],
     target: "vscode",
     overrides: {
-        react: {
-            output: "dist/react.json"
+        tsx: {
+            output: "dist/tsx.json"
         }
     }
 })
@@ -46,31 +46,32 @@ export default defineConfig({
 | Opção       | Descrição                                       | Padrão                 |
 | ----------- | ----------------------------------------------- | ---------------------- |
 | `cwd`       | Diretório que contém os módulos                 | obrigatório            |
-| `presets`   | Presets habilitados (`react` ou `empty`)        | obrigatório            |
+| `presets`   | Presets habilitados                             | obrigatório            |
 | `target`    | Formato de saída (`vscode` ou `zed`)            | `vscode`               |
 | `overrides` | Substituições de saída, escopos e transformação | configuração do preset |
 
 Todo caminho de saída deve permanecer dentro do projeto.
+
+Presets disponíveis: `tsx`, `jsx`, `swift`, `kotlin`, `python`, `php`, `ruby`,
+`rust`, `zig`, `c`, `cpp`, `javascript` e `empty`. Cada preset de linguagem gera
+`dist/<linguagem>.json`; `overrides` permite alterar saída, escopos ou
+transformação individualmente.
 
 ## Módulos e snippets
 
 ```ts
 import { Module, Snippet, Todo, type SnippetDefinition } from "hokit"
 
-@Module({ preset: "react" })
-export class ReactModule {
+@Module({ preset: "tsx" })
+export class TsxModule {
     @Snippet({
-        name: "React functional component",
-        prefix: "rfc",
-        body: [
-            "export function ${1:Component}() {",
-            "    return <div>$0</div>",
-            "}"
-        ]
+        name: "tsx",
+        prefix: "tsx",
+        body: ["$0"]
     })
-    declare component: SnippetDefinition
+    declare tsx: SnippetDefinition
 
-    @Todo("Implementação pendente")
+    @Todo("Future implementation")
     declare pending: SnippetDefinition
 }
 ```
@@ -78,11 +79,15 @@ export class ReactModule {
 Módulos que usam o mesmo preset são agregados no mesmo arquivo. Nomes e prefixos
 devem ser únicos dentro do preset.
 
+Na saída do VS Code, cada snippet recebe o `scope` do preset. Quando
+`description` não é informada, o nome do snippet é usado; `template` é convertido
+para `isFileTemplate` e assume `false` por padrão.
+
 ## CLI
 
 ### `hokit init`
 
-Inicializa um projeto com configuração, TypeScript e um módulo React de exemplo.
+Inicializa um projeto com configuração, TypeScript e um módulo TSX de exemplo.
 Arquivos existentes são preservados.
 
 ```sh
@@ -100,11 +105,16 @@ hokit build
 
 ### `hokit module [preset]`
 
-Cria um módulo para um preset habilitado. Sem argumento, usa o primeiro preset da
-configuração. Não sobrescreve módulos existentes.
+Cria um módulo para um preset. Se necessário, habilita automaticamente o preset
+em `hokit.config.ts`. Sem argumento, usa o primeiro preset da configuração. Não
+sobrescreve módulos existentes. Os templates não incluem `@Todo`; use `--todo`
+para adicioná-lo depois do último snippet. Sem informar o preset, o primeiro da
+configuração é utilizado.
 
 ```sh
-hokit module react
+hokit module tsx
+hokit module tsx --todo
+hokit module --todo
 hokit module --list
 ```
 

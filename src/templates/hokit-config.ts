@@ -3,7 +3,7 @@ export function hokitConfigTemplate() {
 
 export default defineConfig({
     cwd: "src/modules",
-    presets: ["react"],
+    presets: ["tsx"],
     target: "vscode"
 })
 `

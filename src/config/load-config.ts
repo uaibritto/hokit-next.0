@@ -10,7 +10,14 @@ import { tsImport } from "tsx/esm/api"
  *
  * hokit.config.ts
  */
-export async function loadConfig(root = process.cwd()): Promise<BuildConfig> {
+export interface LoadConfigOptions {
+    allowEmptyPresets?: boolean
+}
+
+export async function loadConfig(
+    root = process.cwd(),
+    options: LoadConfigOptions = {}
+): Promise<BuildConfig> {
     const path = resolve(root, "hokit.config.ts")
 
     try {
@@ -49,7 +56,11 @@ export async function loadConfig(root = process.cwd()): Promise<BuildConfig> {
         throw new ConfigError('The config field "cwd" must be a directory.')
     }
 
-    if (!Array.isArray(value.presets) || value.presets.length === 0) {
+    if (!Array.isArray(value.presets)) {
+        throw new ConfigError('The config field "presets" must be an array.')
+    }
+
+    if (value.presets.length === 0 && !options.allowEmptyPresets) {
         throw new ConfigError('The config field "presets" cannot be empty.')
     }
 

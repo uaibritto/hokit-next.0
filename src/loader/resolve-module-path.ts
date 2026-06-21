@@ -3,7 +3,7 @@ import { pathToFileURL } from "node:url"
 /**
  * Converte:
  *
- * src/modules/react.ts
+ * src/modules/tsx.ts
  *
  * para:
  *

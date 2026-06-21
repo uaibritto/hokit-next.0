@@ -34,8 +34,14 @@ try {
                 break
 
             case "module":
-                rejectUnknownFlags(["--list"])
-                await Commands.module(args[0])
+                rejectUnknownFlags(["--list", "--todo"])
+                await Commands.module(
+                    args.find((argument) => !argument.startsWith("--")),
+                    {
+                        list: flags.has("--list"),
+                        todo: flags.has("--todo")
+                    }
+                )
 
                 break
 

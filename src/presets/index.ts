@@ -1,2 +1,2 @@
 export * from "@hokit/presets/empty"
-export * from "@hokit/presets/react"
+export * from "@hokit/presets/languages"

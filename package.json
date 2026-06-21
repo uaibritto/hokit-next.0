@@ -1,6 +1,6 @@
 {
     "name": "hokit",
-    "version": "3.0.0-next.0",
+    "version": "3.0.0-beta.5",
     "bin": {
         "hokit": "./dist/cli/index.js"
     },
@@ -22,6 +22,7 @@
         "build": "tsdown",
         "check": "tsc --noEmit",
         "format": "oxfmt",
+        "prepack": "tsdown",
         "test": "pnpm build && node --test"
     },
     "dependencies": {

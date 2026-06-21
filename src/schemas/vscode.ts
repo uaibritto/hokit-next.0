@@ -12,7 +12,9 @@ export const VSCodeSchema: Schema = {
             output[snippet.name] = {
                 prefix: snippet.prefix,
                 body: snippet.body,
-                description: snippet.description
+                scope: module.scopes.join(","),
+                description: snippet.description ?? snippet.name,
+                isFileTemplate: snippet.template ?? false
             }
         }
 

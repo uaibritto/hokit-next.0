@@ -14,6 +14,7 @@ Commands
   build             Generates snippet files.
   module [preset]   Creates a new snippet module.
     --list           Lists available presets.
+    --todo           Adds a Todo after the last snippet.
   lint              Runs validation rules.
     --fix            Automatically fixes safe problems.
   doctor            Checks project health.
@@ -25,7 +26,9 @@ Commands
 Examples
 
   hokit init
-  hokit module react
+  hokit module tsx
+  hokit module tsx --todo
+  hokit module --todo
   hokit module --list
   hokit build
   hokit lint
