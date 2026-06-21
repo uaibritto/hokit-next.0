@@ -1,17 +1,17 @@
-export const reactTemplate = `
-import { Module, Snippet, SnippetDefinition } from "hokit"
+export function reactModuleTemplate() {
+    return `import { Module, Snippet, Todo, type SnippetDefinition } from "hokit"
 
-@Module({
-    target: "react"
-})
-export class ExampleModule {
+@Module({ preset: "react" })
+export class ReactModule {
     @Snippet({
-        name: "",
-        prefix: "",
-        body: [
-            "$0"
-        ]
+        name: "React component",
+        prefix: "rfc",
+        body: ["export function \${1:Component}() {", "    return <div>$0</div>", "}"]
     })
     declare component: SnippetDefinition
+
+    @Todo("Implementação futura")
+    declare rfc: SnippetDefinition
 }
 `
+}

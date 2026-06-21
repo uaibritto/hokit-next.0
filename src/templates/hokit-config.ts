@@ -1,10 +1,10 @@
-export const hokitConfigTemplate: string = `
-    import { defineConfig } from "hokit"
-    import path from "node:path"
+export function hokitConfigTemplate() {
+    return `import { defineConfig } from "hokit"
 
 export default defineConfig({
-    cwd: path.join("src", "module"),
-    presets: ["empty"],
+    cwd: "src/modules",
+    presets: ["react"],
     target: "vscode"
 })
 `
+}

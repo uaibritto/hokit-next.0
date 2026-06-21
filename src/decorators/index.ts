@@ -1,3 +1,3 @@
-export * from "@hokit/decorators/module"
-export * from "@hokit/decorators/snippet"
-export * from "@hokit/decorators/todo"
+export * from "./module"
+export * from "./snippet"
+export * from "./todo"

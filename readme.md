@@ -1,138 +1,191 @@
 # Hokit
 
-## Recommended Structure
+Compilador declarativo de snippets baseado em decorators.
 
-A recommended project structure:
+## Início rápido
+
+```sh
+npm install --save-dev hokit typescript
+npx hokit init
+npx hokit build
+```
+
+O `init` cria os templates, sem sobrescrever arquivos existentes, e instala as
+dependências com o gerenciador que executou a CLI:
 
 ```txt
+.editorconfig
+.gitignore
+.oxfmtrc.json
+.vscode/settings.json
+hokit.config.ts
+package.json
+tsconfig.json
 src/
-├── modules/
-│    ├── react.ts
-│    ├── node.ts
-│    └── vue.ts
-│
-└──hokit.config.ts
+└── modules/
+    └── react.ts
 ```
 
-## Configuration
-
-Define the build settings.
-
-### Options
-
-| Option    | Description                     | Default         |
-| --------- | ------------------------------- | --------------- |
-| `cwd`     | Diretório raiz contendo módulos | `"src/modules"` |
-| `presets` | Predefinições a aplicar         | `[]`            |
-| `target`  | Alvo de execução                | `vscode`        |
-
-### Example
+## Configuração
 
 ```ts
-import path from "node:path"
-import { defineConfig } from "@hokit/config"
+import { defineConfig } from "hokit"
 
 export default defineConfig({
-    cwd: path.join("src", "modules"),
-    presets: ["node", "react"],
-    target: "vscode"
-})
-```
-
-### Presets
-
-The presets allow you to define standard conventions or conventions for your modules.
-
-```ts
-// types
-export interface PresetConfig {
-    output: string
-    scopes: Scope | Scope[]
-    tags?: string[]
-    // It receives the module snippets and can transform them before generating the file.
-    transform?: (snippets: SnippetConfig[]) => SnippetConfig[]
-}
-```
-
-```ts
-// config
-export default defineConfig({
-    cwd: path.join("src", "modules"),
-    presets: {
+    cwd: "src/modules",
+    presets: ["react"],
+    target: "vscode",
+    overrides: {
         react: {
-            output: "dist/react.json",
-            scopes: ["typescriptreact"]
+            output: "dist/react.json"
         }
-    },
-    target: "vscode"
+    }
 })
 ```
 
-## Creating modules
+| Opção       | Descrição                                       | Padrão                 |
+| ----------- | ----------------------------------------------- | ---------------------- |
+| `cwd`       | Diretório que contém os módulos                 | obrigatório            |
+| `presets`   | Presets habilitados (`react` ou `empty`)        | obrigatório            |
+| `target`    | Formato de saída (`vscode` ou `zed`)            | `vscode`               |
+| `overrides` | Substituições de saída, escopos e transformação | configuração do preset |
 
-A module groups snippets that share metadata.
+Todo caminho de saída deve permanecer dentro do projeto.
+
+## Módulos e snippets
 
 ```ts
-import { Module, Snippet, Todo, SnippetDefinition } from "hokit"
+import { Module, Snippet, Todo, type SnippetDefinition } from "hokit"
 
 @Module({ preset: "react" })
-class ReactModule {
+export class ReactModule {
     @Snippet({
-        name: "React Functional Component",
+        name: "React functional component",
         prefix: "rfc",
-        body: ["$0"]
+        body: [
+            "export function ${1:Component}() {",
+            "    return <div>$0</div>",
+            "}"
+        ]
     })
-    declare rfc: SnippetDefinition
+    declare component: SnippetDefinition
 
-    @Todo("Implementation pending")
-    declare saf: SnippetDefinition
+    @Todo("Implementação pendente")
+    declare pending: SnippetDefinition
 }
 ```
 
-## Validation
-
-Performs validation of DTO fields using validators.
-Used by the linter to ensure that DTO fields are validated correctly.
-
-```ts
-import { Unique, Require, Min } from 'hokit/validator"
-
-class SnippetFields {
-    @Unique()
-    @Require()
-    name: string
-
-    @Unique()
-    @Require()
-    prefix: string
-
-    @Min(1)
-    body: string[]
-}
-```
+Módulos que usam o mesmo preset são agregados no mesmo arquivo. Nomes e prefixos
+devem ser únicos dentro do preset.
 
 ## CLI
 
-### Help
+### `hokit init`
 
-Displays information about the available commands.
+Inicializa um projeto com configuração, TypeScript e um módulo React de exemplo.
+Arquivos existentes são preservados.
+
+```sh
+hokit init
+```
+
+### `hokit build`
+
+Carrega os módulos TypeScript, valida os snippets e grava os arquivos dos presets.
+A escrita é atômica: um erro não deixa um arquivo parcialmente gerado.
+
+```sh
+hokit build
+```
+
+### `hokit module [preset]`
+
+Cria um módulo para um preset habilitado. Sem argumento, usa o primeiro preset da
+configuração. Não sobrescreve módulos existentes.
+
+```sh
+hokit module react
+hokit module --list
+```
+
+### `hokit lint [--fix]`
+
+Executa as regras `required`, `min` e `unique` em todos os módulos. A opção
+`--fix` corrige de forma segura espaços externos em textos e adiciona `$0` a um
+`body` vazio. Problemas ambíguos, como nomes duplicados, continuam sendo
+reportados para correção manual.
+
+```sh
+hokit lint
+hokit lint --fix
+```
+
+### `hokit doctor`
+
+Verifica a versão do Node.js, a configuração, o diretório de módulos, os presets
+e se todos os caminhos de saída são seguros.
+
+```sh
+hokit doctor
+```
+
+### `hokit clean`
+
+Remove somente os arquivos de saída declarados pelos presets, sempre dentro do
+diretório do projeto.
+
+```sh
+hokit clean
+```
+
+### `hokit info`
+
+Mostra a versão do Hokit, diretório do projeto, target e presets ativos.
+
+```sh
+hokit info
+```
+
+### `hokit watch`
+
+Executa um build inicial e recompila quando um módulo muda. Alterações rápidas
+são enfileiradas para impedir builds concorrentes.
+
+```sh
+hokit watch
+```
+
+### `hokit help`
+
+Exibe a referência resumida dos comandos.
 
 ```sh
 hokit help
+hokit --help
+hokit --version
 ```
 
-```sh
-# commands:
+## Validação personalizada
 
-`init`          # Inicia um novo projeto com um template padrão
-`build`         # Gera arquivos de snippet
-`module`        # Cria um novo módulo com base em um template
-`watch`         # Inicia o modo de observação
-`doctor`        # Verifica a configuração do projeto
-`lint`          # Executa o linter
+Os decorators de validação também estão disponíveis pelo subpath público:
 
-# flags:
-
-`--list`        # Lista todos os módulos disponíveis
-`--fix`          # Executa o linter e corrige automaticamente os problemas
+```ts
+import { Min, Required, Unique } from "hokit/validator"
 ```
+
+## Arquitetura
+
+```txt
+Configuração + módulos TypeScript
+              ↓
+      Loader de decorators
+              ↓
+     Registro global de metadata
+              ↓
+ Scanner → Validação → Preset → Schema
+              ↓
+       Escrita atômica segura
+```
+
+O registro global mantém a mesma metadata entre o bundle público e o bundle da
+CLI. A validação acontece antes de qualquer arquivo ser substituído.

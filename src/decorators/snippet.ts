@@ -1,16 +1,22 @@
-import { snippets } from "@hokit/metadata"
+import { SNIPPETS_METADATA } from "@hokit/metadata"
 import type { SnippetConfig } from "@hokit/types"
+import "reflect-metadata"
 
-export function Snippet(options: SnippetConfig): PropertyDecorator {
+interface RegisteredSnippet {
+    propertyKey: string | symbol
+    config: SnippetConfig
+}
+
+export function Snippet(config: SnippetConfig): PropertyDecorator {
     return (target, propertyKey) => {
         const ctor = target.constructor
-        const existing = snippets.get(ctor) ?? []
+        const snippets = Reflect.getOwnMetadata(SNIPPETS_METADATA, ctor) ?? []
 
-        existing.push({
+        snippets.push({
             propertyKey,
-            options
-        })
+            config
+        } satisfies RegisteredSnippet)
 
-        snippets.set(ctor, existing)
+        Reflect.defineMetadata(SNIPPETS_METADATA, snippets, ctor)
     }
 }

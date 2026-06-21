@@ -1,13 +1,21 @@
-import { todos } from "@hokit/metadata"
+import { TODOS_METADATA } from "@hokit/metadata"
+import "reflect-metadata"
 
-export function Todo(describe: string): PropertyDecorator {
+interface RegisteredTodo {
+    propertyKey: string | symbol
+    message: string
+}
+
+export function Todo(message: string): PropertyDecorator {
     return (target, propertyKey) => {
         const ctor = target.constructor
+        const todos = Reflect.getOwnMetadata(TODOS_METADATA, ctor) ?? []
 
-        const moduleTodos =
-            todos.get(ctor) ?? new Map<string | symbol, string>()
+        todos.push({
+            propertyKey,
+            message
+        } satisfies RegisteredTodo)
 
-        moduleTodos.set(propertyKey, describe)
-        todos.set(ctor, moduleTodos)
+        Reflect.defineMetadata(TODOS_METADATA, todos, ctor)
     }
 }

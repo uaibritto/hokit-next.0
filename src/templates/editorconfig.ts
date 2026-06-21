@@ -1,5 +1,5 @@
-export const editorConfigTemplate = `
-root = true
+export function editorconfigTemplate() {
+    return `root = true
 
 [*]
 charset = utf-8
@@ -8,3 +8,4 @@ indent_size = 4
 insert_final_newline = true
 trim_trailing_whitespace = true
 `
+}

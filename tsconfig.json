@@ -7,11 +7,11 @@
         "noUncheckedIndexedAccess": true,
         "exactOptionalPropertyTypes": true,
         "experimentalDecorators": true,
-        "types": ["node"],
+        "types": ["node", "reflect-metadata"],
         "paths": {
             "@hokit/*": ["./src/*"]
         }
     },
 
-    "include": ["src", "playground"]
+    "include": ["src"]
 }

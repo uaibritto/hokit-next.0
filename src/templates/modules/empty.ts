@@ -1,17 +1,17 @@
-export const emptyTemplate = `
-import { Module, Snippet, SnippetDefinition } from "hokit"
+export function emptyModuleTemplate() {
+    return `import { Module, Snippet, Todo, type SnippetDefinition } from "hokit"
 
-@Module({
-    target: ""
-})
-export class ExampleModule {
+@Module({ preset: "empty" })
+export class EmptyModule {
     @Snippet({
-        name: "",
-        prefix: "",
-        body: [
-            "$0"
-        ]
+        name: "Empty example",
+        prefix: "empty",
+        body: ["$0"]
     })
-    declare snippet: SnippetDefinition
+    declare example: SnippetDefinition
+
+    @Todo("Implementação futura")
+    declare todo: SnippetDefinition
 }
 `
+}

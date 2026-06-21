@@ -2,7 +2,7 @@
     "name": "hokit",
     "version": "3.0.0-next.0",
     "bin": {
-        "hokit": "./dist/cli.js"
+        "hokit": "./dist/cli/index.js"
     },
     "files": [
         "dist"
@@ -12,22 +12,32 @@
         ".": {
             "types": "./dist/index.d.ts",
             "import": "./dist/index.js"
+        },
+        "./validator": {
+            "types": "./dist/validator/index.d.ts",
+            "import": "./dist/validator/index.js"
         }
     },
     "scripts": {
         "build": "tsdown",
-        "format": "oxfmt"
+        "check": "tsc --noEmit",
+        "format": "oxfmt",
+        "test": "pnpm build && node --test"
     },
     "dependencies": {
         "chokidar": "^5.0.0",
-        "execa": "^9.6.1",
         "picocolors": "^1.1.1",
-        "tinyglobby": "^0.2.17"
+        "reflect-metadata": "^0.2.2",
+        "tinyglobby": "^0.2.17",
+        "tsx": "^4.22.4",
+        "typescript": "^5.9.3"
     },
     "devDependencies": {
         "@types/node": "^26.0.0",
         "oxfmt": "^0.55.0",
-        "tsdown": "^0.22.3",
-        "typescript": "^7.0.1-rc"
+        "tsdown": "^0.22.3"
+    },
+    "engines": {
+        "node": ">=20.6.0"
     }
 }
