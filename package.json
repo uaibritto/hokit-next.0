@@ -1,6 +1,23 @@
 {
     "name": "hokit",
-    "version": "3.0.0-beta.5",
+    "version": "3.0.0",
+    "description": "A declarative snippet compiler based on decorators.",
+    "keywords": [
+        "cursor",
+        "snippet",
+        "snippets",
+        "vscode"
+    ],
+    "homepage": "https://github.com/uaibritto/hokit",
+    "bugs": {
+        "url": "https://github.com/uaibritto/hokit/issues"
+    },
+    "license": "MIT",
+    "author": "uaibritto",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/uaibritto/hokit.git"
+    },
     "bin": {
         "hokit": "./dist/cli/index.js"
     },
@@ -8,6 +25,9 @@
         "dist"
     ],
     "type": "module",
+    "sideEffects": false,
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
     "exports": {
         ".": {
             "types": "./dist/index.d.ts",
