@@ -26,29 +26,25 @@ export interface ModuleTemplateOptions {
     todo?: boolean
 }
 
+/** Renderiza o módulo inicial de uma linguagem oficial. */
 export function languageModuleTemplate(
     preset: LanguagePreset,
     options: ModuleTemplateOptions = {}
 ) {
     const language = Languages[preset]
     const todoImport = options.todo ? ", Todo" : ""
-    const todo = options.todo
-        ? `
-
-    @Todo("Future implementation")
-    declare todo: SnippetDefinition`
-        : ""
+    const todo = options.todo ? `    @Todo("Future implementation")\n` : ""
 
     return `import { Module, Snippet${todoImport}, type SnippetDefinition } from "hokit"
 
 @Module({ preset: "${preset}" })
 export class ${language.className} {
-    @Snippet({
+${todo}    @Snippet({
         name: "${preset}",
         prefix: "${language.acronym}",
         body: ["$0"]
     })
-    declare ${language.acronym}: SnippetDefinition${todo}
+    declare ${language.acronym}: SnippetDefinition
 }
 `
 }

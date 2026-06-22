@@ -14,6 +14,7 @@ function rejectUnknownFlags(allowed: string[]) {
 }
 
 try {
+    // Flags globais funcionam sem exigir um comando explícito.
     if (command === "--version" || flags.has("--version")) {
         console.log(VERSION)
         process.exitCode = 0
@@ -21,6 +22,7 @@ try {
         await Commands.help()
     } else {
         switch (command) {
+            // O parser só traduz argumentos; regras de negócio ficam nos handlers.
             case "init":
                 rejectUnknownFlags([])
                 await Commands.init()
@@ -28,8 +30,10 @@ try {
                 break
 
             case "build":
-                rejectUnknownFlags([])
-                await Commands.build()
+                rejectUnknownFlags(["--include-todos"])
+                await Commands.build({
+                    includeTodos: flags.has("--include-todos")
+                })
 
                 break
 
@@ -51,10 +55,17 @@ try {
 
                 break
 
+            case "docs":
+                rejectUnknownFlags([])
+                await Commands.docs()
+
+                break
+
             case "lint":
-                rejectUnknownFlags(["--fix"])
+                rejectUnknownFlags(["--fix", "--json"])
                 await Commands.lint({
-                    fix: flags.has("--fix")
+                    fix: flags.has("--fix"),
+                    json: flags.has("--json")
                 })
 
                 break

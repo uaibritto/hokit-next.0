@@ -23,6 +23,7 @@ export async function writeSchema(
     })
 
     try {
+        // Rename no mesmo diretório troca o arquivo final de maneira atômica.
         await writeFile(temporary, `${content}\n`, {
             flag: "wx",
             mode: 0o600

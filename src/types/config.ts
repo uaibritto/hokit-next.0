@@ -1,9 +1,15 @@
-import type { Preset, Target } from "./core"
+import type { PresetName, Target } from "./core"
 import type { PresetConfig } from "./preset"
 
+/** Contrato completo aceito por `defineConfig`. */
 export interface BuildConfig {
     cwd: string
-    presets: Preset[]
-    overrides?: Partial<Record<Preset, Partial<PresetConfig>>>
+    presets: PresetName[]
+    customPresets?: Record<string, PresetConfig>
+    overrides?: Partial<Record<PresetName, Partial<PresetConfig>>>
+    docs?: {
+        output?: string
+        title?: string
+    }
     target?: Target
 }

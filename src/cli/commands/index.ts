@@ -1,5 +1,6 @@
 import { buildCommand } from "./build/command"
 import { cleanCommand } from "./clean/command"
+import { docsCommand } from "./docs/command"
 import { doctorCommand } from "./doctor/command"
 import { helpCommand } from "./help/command"
 import { infoCommand } from "./info/command"
@@ -14,6 +15,8 @@ export const Commands = {
     clean: cleanCommand,
 
     doctor: doctorCommand,
+
+    docs: docsCommand,
 
     help: helpCommand,
 

@@ -15,6 +15,8 @@ export const PRESETS = {
 } as const
 
 export type Preset = (typeof PRESETS)[keyof typeof PRESETS]
+/** Une autocomplete dos presets internos à liberdade de criar presets próprios. */
+export type PresetName = Preset | (string & {})
 export type Scope =
     | "typescript"
     | "typescriptreact"
@@ -29,5 +31,6 @@ export type Scope =
     | "zig"
     | "c"
     | "cpp"
+    | (string & {})
 export type Target = "vscode" | "zed"
 export type Constructor = Function

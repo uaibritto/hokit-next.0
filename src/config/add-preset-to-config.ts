@@ -3,10 +3,14 @@ import { readFile, rename, rm, writeFile } from "node:fs/promises"
 import { resolve } from "node:path"
 
 import { ConfigError } from "@hokit/errors"
-import type { Preset } from "@hokit/types"
+import type { PresetName } from "@hokit/types"
 import ts from "typescript"
 
-export async function addPresetToConfig(preset: Preset, root = process.cwd()) {
+export async function addPresetToConfig(
+    preset: PresetName,
+    root = process.cwd()
+) {
+    // Alterar a AST evita regex frágeis e preserva expressões TypeScript válidas.
     const path = resolve(root, "hokit.config.ts")
     const source = await readFile(path, "utf8")
     const file = ts.createSourceFile(
@@ -101,6 +105,7 @@ export async function addPresetToConfig(preset: Preset, root = process.cwd()) {
         const temporary = `${path}.${randomUUID()}.tmp`
 
         try {
+            // Escreve primeiro em temporário para nunca deixar configuração parcial.
             await writeFile(temporary, content, { flag: "wx", mode: 0o600 })
             await rename(temporary, path)
         } catch (error) {

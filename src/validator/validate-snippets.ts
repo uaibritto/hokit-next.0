@@ -18,8 +18,13 @@ import { validateObject } from "./validate-object"
 export function validateSnippets(snippets: SnippetConfig[]): ValidationResult {
     const issues: ValidationIssue[] = []
 
-    for (const snippet of snippets) {
-        issues.push(...validateObject(SnippetFields, snippet))
+    for (const [snippetIndex, snippet] of snippets.entries()) {
+        issues.push(
+            ...validateObject(SnippetFields, snippet).map((issue) => ({
+                ...issue,
+                snippetIndex
+            }))
+        )
     }
 
     const rules = Reflect.getMetadata(VALIDATION_RULES, SnippetFields) ?? []
@@ -31,7 +36,7 @@ export function validateSnippets(snippets: SnippetConfig[]): ValidationResult {
         const field = String(item.propertyKey)
         const seen = new Set<unknown>()
 
-        for (const snippet of snippets) {
+        for (const [snippetIndex, snippet] of snippets.entries()) {
             const value = snippet[field as keyof SnippetConfig]
 
             if (value === undefined || value === null) {
@@ -42,7 +47,8 @@ export function validateSnippets(snippets: SnippetConfig[]): ValidationResult {
                 issues.push({
                     field,
                     code: "UNIQUE",
-                    message: item.rule.message ?? `${field} must be unique.`
+                    message: item.rule.message ?? `${field} must be unique.`,
+                    snippetIndex
                 })
             }
 

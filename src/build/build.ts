@@ -9,7 +9,15 @@ import { Schemas } from "@hokit/schemas/registry"
 import type { BuildConfig, ScannedModule } from "@hokit/types"
 import { writeSchema } from "@hokit/writers/write-schema"
 
-export async function build(config: BuildConfig, root = process.cwd()) {
+export interface BuildOptions {
+    includeTodos?: boolean
+}
+
+export async function build(
+    config: BuildConfig,
+    root = process.cwd(),
+    options: BuildOptions = {}
+) {
     /**
      * Carrega módulos.
      */
@@ -57,9 +65,10 @@ export async function build(config: BuildConfig, root = process.cwd()) {
         const combined: ScannedModule = {
             constructor: first.constructor,
             module: first.module,
-            snippets: entries.flatMap((entry) => entry.snippets)
+            snippets: entries.flatMap((entry) => entry.snippets),
+            todos: entries.flatMap((entry) => entry.todos)
         }
-        const compiled = compileModule(combined, preset)
+        const compiled = compileModule(combined, preset, options)
         resolveOutputPath(root, config.cwd, compiled.output)
         outputs.push(await writeSchema(compiled, schema, root))
     }

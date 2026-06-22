@@ -34,6 +34,7 @@ async function exists(path: string) {
 }
 
 async function detectPackageManager() {
+    // Prioriza quem invocou a CLI e usa lockfiles apenas como fallback.
     const userAgent = process.env.npm_config_user_agent?.split("/")[0]
 
     if (["npm", "pnpm", "yarn", "bun"].includes(userAgent ?? "")) {
@@ -85,6 +86,7 @@ async function installDependencies() {
 }
 
 export async function initHandler() {
+    // `wx` nos arquivos abaixo garante que o init nunca sobrescreva trabalho existente.
     await mkdir("src/modules", { recursive: true })
     await mkdir(".vscode", { recursive: true })
 

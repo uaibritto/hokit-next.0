@@ -112,9 +112,9 @@ test("all CLI commands work in a real project", async () => {
         assert.match(moduleWithTodo, /Snippet, Todo, type SnippetDefinition/)
         assert.match(moduleWithTodo, /@Todo\("Future implementation"\)/)
         assert.ok(
-            moduleWithTodo.indexOf("@Todo") >
-                moduleWithTodo.indexOf("declare tsx")
+            moduleWithTodo.indexOf("@Todo") < moduleWithTodo.indexOf("@Snippet")
         )
+        assert.doesNotMatch(moduleWithTodo, /declare todo/)
         assert.match(
             await readFile(join(project, ".editorconfig"), "utf8"),
             /indent_size = 4/
@@ -250,6 +250,36 @@ export class TsxExtraModule {
             /@Todo\("Future implementation"\)/
         )
 
+        result = await run(project, "lint")
+        assert.equal(result.code, 0, result.stderr)
+        assert.match(
+            result.stderr,
+            /\[TODO\] javascript\.js: Future implementation/
+        )
+
+        result = await run(project, "lint", "--json")
+        assert.equal(result.code, 0, result.stderr)
+        const lintJson = JSON.parse(result.stdout)
+        assert.equal(lintJson.valid, true)
+        assert.equal(lintJson.todos[0].code, "TODO")
+        assert.equal(
+            lintJson.todos[0].location.file.endsWith("javascript.ts"),
+            true
+        )
+
+        await writeFile(
+            configPath,
+            (await readFile(configPath, "utf8")).replace(
+                'target: "vscode"',
+                'target: "vscode", customPresets: { astro: { output: "dist/astro.json", scopes: ["astro"] } }'
+            )
+        )
+        result = await run(project, "module", "--list")
+        assert.equal(result.code, 0, result.stderr)
+        assert.match(result.stdout, /^astro$/m)
+        result = await run(project, "module", "astro")
+        assert.equal(result.code, 0, result.stderr)
+
         const typecheck = await runConsumerTypecheck(project)
         assert.equal(
             typecheck.code,
@@ -271,6 +301,10 @@ export class TsxExtraModule {
         assert.equal(tsxOutput.tsx.description, "tsx")
         assert.equal(tsxOutput.tsx.isFileTemplate, false)
         assert.equal(emptyOutput.Padded.isFileTemplate, true)
+        assert.ok(
+            JSON.parse(await readFile(join(project, "dist/astro.json"), "utf8"))
+                .astro
+        )
         const expectedScopes = {
             jsx: "javascriptreact",
             swift: "swift",
@@ -288,6 +322,12 @@ export class TsxExtraModule {
             const snippet = JSON.parse(
                 await readFile(join(project, `dist/${preset}.json`), "utf8")
             )[preset]
+
+            if (preset === "javascript") {
+                assert.equal(snippet, undefined)
+                continue
+            }
+
             assert.ok(snippet)
             assert.equal(
                 snippet.scope,
@@ -295,6 +335,30 @@ export class TsxExtraModule {
                 `Unexpected scope for ${preset}`
             )
         }
+
+        result = await run(project, "build", "--include-todos")
+        assert.equal(result.code, 0, result.stderr)
+        assert.ok(
+            JSON.parse(
+                await readFile(join(project, "dist/javascript.json"), "utf8")
+            ).javascript
+        )
+
+        result = await run(project, "docs")
+        assert.equal(result.code, 0, result.stderr)
+        const docsIndex = await readFile(
+            join(project, "docs/snippets/README.md"),
+            "utf8"
+        )
+        assert.match(docsIndex, /typescriptreact\.md/)
+        assert.match(docsIndex, /astro\.md/)
+        assert.match(
+            await readFile(
+                join(project, "docs/snippets/javascript.md"),
+                "utf8"
+            ),
+            /Pending — Future implementation/
+        )
 
         result = await run(project, "info")
         assert.equal(result.code, 0, result.stderr)
@@ -332,6 +396,35 @@ export class TsxExtraModule {
         result = await run(project, "help")
         assert.equal(result.code, 0, result.stderr)
         assert.match(result.stdout, /hokit <command>/)
+
+        const orphanTodo = join(project, "src/modules/orphan.ts")
+        await writeFile(
+            orphanTodo,
+            `import { Module, Todo, type SnippetDefinition } from "hokit"
+
+@Module({ preset: "tsx" })
+export class OrphanModule {
+    @Todo("Pending without snippet")
+    declare future: SnippetDefinition
+}
+`
+        )
+        result = await run(project, "lint")
+        assert.equal(result.code, 1)
+        assert.match(result.stderr, /TODO_WITHOUT_SNIPPET/)
+        result = await run(project, "lint", "--json")
+        assert.equal(result.code, 1)
+        const orphanJson = JSON.parse(result.stdout)
+        assert.equal(orphanJson.issues[0].code, "TODO_WITHOUT_SNIPPET")
+        assert.equal(
+            orphanJson.issues[0].location.file.endsWith("orphan.ts"),
+            true
+        )
+        assert.equal(typeof orphanJson.issues[0].location.line, "number")
+        result = await run(project, "build")
+        assert.equal(result.code, 1)
+        assert.match(result.stderr, /must decorate a @Snippet/)
+        await rm(orphanTodo)
 
         const unsafeConfig = (await readFile(configPath, "utf8")).replace(
             'target: "vscode"',

@@ -17,15 +17,39 @@ import { validateSnippets } from "@hokit/validator"
  */
 export function compileModule(
     module: ScannedModule,
-    preset: PresetConfig
+    preset: PresetConfig,
+    options: { includeTodos?: boolean } = {}
 ): CompiledModule {
-    const snippets = module.snippets.map((item) => item.config)
+    // Um Todo órfão indica uma intenção sem definição concreta e bloqueia o build.
+    const snippetProperties = new Set(
+        module.snippets.map((snippet) => snippet.propertyKey)
+    )
+    const orphanTodo = module.todos.find(
+        (todo) => !snippetProperties.has(todo.propertyKey)
+    )
+
+    if (orphanTodo) {
+        const field = String(orphanTodo.propertyKey)
+
+        throw new ValidationError(
+            `@Todo on "${field}" must decorate a @Snippet.`,
+            orphanTodo.location
+                ? `${orphanTodo.location.file}:${orphanTodo.location.line}:${orphanTodo.location.column}`
+                : `Add @Snippet to "${field}" or remove the @Todo decorator.`
+        )
+    }
+
+    // O build normal omite pendências; o modo preview pode incluí-las explicitamente.
+    const snippets = module.snippets.filter(
+        (item) => options.includeTodos || item.todo === undefined
+    )
+    const configs = snippets.map((item) => item.config)
 
     /**
      * Executa todas as validações
      * declarativas registradas.
      */
-    const validation = validateSnippets(snippets)
+    const validation = validateSnippets(configs)
 
     if (!validation.valid) {
         const firstIssue = validation.issues[0]
@@ -34,9 +58,15 @@ export function compileModule(
             throw new ValidationError("Validation failed.")
         }
 
+        const location =
+            firstIssue.snippetIndex === undefined
+                ? undefined
+                : snippets[firstIssue.snippetIndex]?.location
         throw new ValidationError(
             firstIssue.message,
-            `Check the "${firstIssue.field}" field.`
+            location
+                ? `${location.file}:${location.line}:${location.column}`
+                : `Check the "${firstIssue.field}" field.`
         )
     }
 
@@ -44,7 +74,7 @@ export function compileModule(
      * Permite que o preset transforme
      * snippets antes da geração.
      */
-    const transformed = preset.transform ? preset.transform(snippets) : snippets
+    const transformed = preset.transform ? preset.transform(configs) : configs
 
     return {
         output: preset.output,

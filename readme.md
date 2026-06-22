@@ -48,7 +48,17 @@ import { defineConfig } from "hokit"
 export default defineConfig({
     cwd: "src/modules",
     presets: ["tsx"],
+    customPresets: {
+        astro: {
+            output: "dist/astro.json",
+            scopes: ["astro"]
+        }
+    },
     target: "vscode",
+    docs: {
+        output: "docs/snippets",
+        title: "Project snippets"
+    },
     overrides: {
         tsx: {
             output: "dist/tsx.json"
@@ -57,12 +67,14 @@ export default defineConfig({
 })
 ```
 
-| Option      | Description                                      | Standard             |
-| ----------- | ------------------------------------------------ | -------------------- |
-| `cwd`       | Directory containing the modules                 | required             |
-| `presets`   | Enabled presets                                  | required             |
-| `target`    | Output format `vscode`                           | `vscode`             |
-| `overrides` | Output substitutions, scopes, and transformation | preset configuration |
+| Option          | Description                                      | Standard             |
+| --------------- | ------------------------------------------------ | -------------------- |
+| `cwd`           | Directory containing the modules                 | required             |
+| `presets`       | Enabled presets                                  | required             |
+| `target`        | Output format `vscode`                           | `vscode`             |
+| `customPresets` | User-defined presets                             | `{}`                 |
+| `overrides`     | Output substitutions, scopes, and transformation | preset configuration |
+| `docs`          | Documentation output and title                   | `docs/snippets`      |
 
 #### Presets
 
@@ -108,7 +120,12 @@ export class TsxModule {
     })
     declare tsx: SnippetDefinition
 
-    @Todo("Create a store with Zustand. [pending]")
+    @Todo("Waiting for the next Zustand release")
+    @Snippet({
+        name: "Zustand store",
+        prefix: "zustand",
+        body: ["$0"]
+    })
     declare useStore: SnippetDefinition
 }
 ```
@@ -121,7 +138,9 @@ In the VS Code output, each snippet receives the `scope` of the preset. When `de
 
 - `@Module`: Defines a module and the preset to be used.
 - `@Snippet`: Define the snippet properties.
-- `@Todo`: Marks a snippet as "pending" to be implemented later. It is ignored by the build.
+- `@Todo`: Marks a real `@Snippet` as pending. Pending snippets appear as lint
+  warnings and are ignored by the build. Using `@Todo` without `@Snippet` is an
+  error.
 
 ## CLI
 
@@ -143,11 +162,12 @@ Writing is atomic: an error will not leave a partially generated file.
 
 ```sh
 hokit build
+hokit build --include-todos
 ```
 
 ### `hokit module [preset]`
 
-Creates a module for a preset. If necessary, automatically enables the preset in `hokit.config.ts`. Without an argument, it uses the first preset in the configuration. It does not overwrite existing modules. Templates do not include `@Todo`; use `--todo` to add it after the last snippet. Without specifying a preset, the first one in the configuration is used.
+Creates a module for a preset. If necessary, automatically enables the preset in `hokit.config.ts`. Without an argument, it uses the first preset in the configuration. It does not overwrite existing modules. Templates do not include `@Todo`; use `--todo` to mark the last snippet as pending. Without specifying a preset, the first one in the configuration is used.
 
 ```sh
 hokit module tsx
@@ -165,6 +185,16 @@ The `--fix` option safely corrects outer spaces in text and adds `$0` to an empt
 ```sh
 hokit lint
 hokit lint --fix
+hokit lint --json
+```
+
+### `hokit docs`
+
+Generates a Markdown summary and one page per scope. Pending snippets remain in
+the documentation with their status and source location.
+
+```sh
+hokit docs
 ```
 
 ### `hokit doctor`
@@ -218,6 +248,8 @@ import { Min, Required, Unique } from "hokit/validator"
 ```
 
 ## Architecture
+
+See the commented overview in [`docs/architecture.md`](./docs/architecture.md).
 
 ```txt
     Configuration + TypeScript modules

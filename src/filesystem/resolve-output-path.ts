@@ -9,6 +9,7 @@ export function resolveOutputPath(
     modulesDirectory: string,
     output: string
 ) {
+    // Protege tanto o projeto quanto o diretório que contém os módulos-fonte.
     const path = resolveProjectPath(root, output)
     const modules = resolveProjectPath(root, modulesDirectory, {
         allowRoot: true

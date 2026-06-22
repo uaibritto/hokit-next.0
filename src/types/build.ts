@@ -1,8 +1,8 @@
-import { Preset } from "./core"
+import { PresetName } from "./core"
 import { PresetConfig } from "./preset"
 import { ScannedModule } from "./scanner"
 
 export interface BuildContext {
     modules: ScannedModule[]
-    presets: Partial<Record<Preset, PresetConfig>>
+    presets: Partial<Record<PresetName, PresetConfig>>
 }

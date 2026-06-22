@@ -11,9 +11,21 @@ import { validateSnippets } from "@hokit/validator"
 
 export interface LintOptions {
     fix?: boolean
+    json?: boolean
+}
+
+function formatLocation(location?: {
+    file: string
+    line: number
+    column: number
+}) {
+    return location
+        ? `${location.file}:${location.line}:${location.column}: `
+        : ""
 }
 
 async function inspect() {
+    // Reimporta os módulos para trabalhar sempre com metadata atualizada.
     const config = await loadConfig()
     const directory = resolveProjectPath(process.cwd(), config.cwd, {
         allowRoot: true
@@ -23,21 +35,64 @@ async function inspect() {
     const modules = scanModules()
     const grouped = new Map<string, typeof modules>()
 
+    // Regras de unicidade são avaliadas no conjunto inteiro de cada preset.
     for (const module of modules) {
         const entries = grouped.get(module.module.preset) ?? []
         entries.push(module)
         grouped.set(module.module.preset, entries)
     }
 
-    const issues = [...grouped].flatMap(([preset, entries]) =>
-        validateSnippets(
-            entries.flatMap((module) =>
-                module.snippets.map((snippet) => snippet.config)
-            )
-        ).issues.map((issue) => ({ ...issue, preset }))
+    const issues = [...grouped].flatMap(([preset, entries]) => {
+        const snippets = entries.flatMap((module) => module.snippets)
+
+        return validateSnippets(
+            snippets.map((snippet) => snippet.config)
+        ).issues.map((issue) => ({
+            ...issue,
+            ...(issue.snippetIndex === undefined
+                ? {}
+                : { location: snippets[issue.snippetIndex]?.location }),
+            preset
+        }))
+    })
+
+    for (const module of modules) {
+        // Todo sem Snippet é erro; Todo associado vira aviso mais abaixo.
+        const snippetProperties = new Set(
+            module.snippets.map((snippet) => snippet.propertyKey)
+        )
+
+        for (const todo of module.todos) {
+            if (!snippetProperties.has(todo.propertyKey)) {
+                issues.push({
+                    field: String(todo.propertyKey),
+                    code: "TODO_WITHOUT_SNIPPET",
+                    message: "@Todo must decorate a @Snippet.",
+                    preset: module.module.preset,
+                    ...(todo.location ? { location: todo.location } : {})
+                })
+            }
+        }
+    }
+
+    const todos = modules.flatMap((module) =>
+        module.snippets.flatMap((snippet) =>
+            snippet.todo
+                ? [
+                      {
+                          field: String(snippet.propertyKey),
+                          message: snippet.todo,
+                          preset: module.module.preset,
+                          ...(snippet.location
+                              ? { location: snippet.location }
+                              : {})
+                      }
+                  ]
+                : []
+        )
     )
 
-    return { files, issues, modules }
+    return { files, issues, modules, todos }
 }
 
 export async function lintHandler(options: LintOptions = {}) {
@@ -51,9 +106,40 @@ export async function lintHandler(options: LintOptions = {}) {
         if (fixed > 0) result = await inspect()
     }
 
+    if (options.json) {
+        // stdout contém somente JSON para ser consumido por CI e extensões.
+        console.log(
+            JSON.stringify(
+                {
+                    valid: result.issues.length === 0,
+                    fixed,
+                    issues: result.issues.map((issue) => ({
+                        severity: "error",
+                        ...issue
+                    })),
+                    todos: result.todos.map((todo) => ({
+                        severity: "warning",
+                        code: "TODO",
+                        ...todo
+                    }))
+                },
+                null,
+                2
+            )
+        )
+        if (result.issues.length > 0) process.exitCode = 1
+        return { fixed, issues: result.issues, todos: result.todos }
+    }
+
     for (const issue of result.issues) {
         logger.warn(
-            `[${issue.code}] ${issue.preset}.${issue.field}: ${issue.message}`
+            `${formatLocation(issue.location)}[${issue.code}] ${issue.preset}.${issue.field}: ${issue.message}`
+        )
+    }
+
+    for (const todo of result.todos) {
+        logger.warn(
+            `${formatLocation(todo.location)}[TODO] ${todo.preset}.${todo.field}: ${todo.message}`
         )
     }
 
@@ -63,9 +149,13 @@ export async function lintHandler(options: LintOptions = {}) {
         throw new Error(`Lint found ${result.issues.length} problem(s).`)
     }
 
+    const pending =
+        result.todos.length === 0
+            ? ""
+            : ` (${result.todos.length} pending Todo(s))`
     logger.success(
-        `Lint passed for ${result.modules.length} module(s) with no problems.`
+        `Lint passed for ${result.modules.length} module(s) with no problems${pending}.`
     )
 
-    return { fixed, issues: result.issues }
+    return { fixed, issues: result.issues, todos: result.todos }
 }

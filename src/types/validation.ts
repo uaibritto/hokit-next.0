@@ -15,6 +15,8 @@ export interface ValidationIssue {
     field: string
     message: string
     code: string
+    snippetIndex?: number
+    location?: import("./metadata").SourceLocation
 }
 
 export interface ValidationResult {

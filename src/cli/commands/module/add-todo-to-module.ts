@@ -18,6 +18,7 @@ function hasDecorator(node: ts.Node, name: string) {
 }
 
 export async function addTodoToModule(path: string) {
+    // Parseia o arquivo sem executar código do projeto.
     const source = await readFile(path, "utf8")
     const file = ts.createSourceFile(
         path,
@@ -32,10 +33,6 @@ export async function addTodoToModule(path: string) {
         throw new ConfigError(`Could not find a class in ${path}.`)
     }
 
-    if (moduleClass.members.some((member) => hasDecorator(member, "Todo"))) {
-        throw new ConfigError(`Module ${path} already contains a Todo.`)
-    }
-
     const snippetMembers = moduleClass.members.filter((member) =>
         hasDecorator(member, "Snippet")
     )
@@ -46,6 +43,10 @@ export async function addTodoToModule(path: string) {
             `Could not add a Todo to ${path}.`,
             "Define at least one @Snippet before adding a Todo."
         )
+    }
+
+    if (hasDecorator(lastSnippet, "Todo")) {
+        throw new ConfigError(`The last snippet in ${path} is already pending.`)
     }
 
     const importDeclaration = file.statements.find(
@@ -69,6 +70,7 @@ export async function addTodoToModule(path: string) {
     )
 
     if (!hasTodoImport) {
+        // Imports de valor ficam antes dos imports marcados com `type`.
         const firstTypeImport = imports.elements.find(
             (element) => element.isTypeOnly
         )
@@ -82,28 +84,16 @@ export async function addTodoToModule(path: string) {
         )
     }
 
-    const propertyNames = new Set(
-        moduleClass.members
-            .filter(ts.isPropertyDeclaration)
-            .map((member) => member.name.getText(file))
-    )
-    let propertyName = "todo"
-    let suffix = 2
-
-    while (propertyNames.has(propertyName)) {
-        propertyName = `todo${suffix}`
-        suffix += 1
-    }
-
     const lineStart = source.lastIndexOf("\n", lastSnippet.getStart(file)) + 1
     const indentation = source.slice(lineStart, lastSnippet.getStart(file))
     changes.push({
-        position: lastSnippet.getEnd(),
-        text: `\n\n${indentation}@Todo("Future implementation")\n${indentation}declare ${propertyName}: SnippetDefinition`
+        position: lastSnippet.getStart(file),
+        text: `@Todo("Future implementation")\n${indentation}`
     })
 
     let content = source
 
+    // Mudanças de trás para frente não invalidam offsets da AST original.
     for (const change of changes.sort(
         (left, right) => right.position - left.position
     )) {

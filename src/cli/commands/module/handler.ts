@@ -7,7 +7,7 @@ import { resolveProjectPath } from "@hokit/filesystem/resolve-project-path"
 import { logger } from "@hokit/logger"
 import { Presets } from "@hokit/presets/registry"
 import { moduleTemplate } from "@hokit/templates"
-import type { Preset } from "@hokit/types"
+import type { PresetName } from "@hokit/types"
 
 import { addTodoToModule } from "./add-todo-to-module"
 
@@ -16,11 +16,18 @@ export interface ModuleOptions {
     todo?: boolean
 }
 
+/** Cria módulos, habilita presets e aplica a opção de pendência. */
 export async function moduleHandler(
     presetName?: string,
     options: ModuleOptions = {}
 ) {
-    const names = Object.keys(Presets) as Preset[]
+    const config = await loadConfig(process.cwd(), {
+        allowEmptyPresets: true
+    })
+    const names: PresetName[] = [
+        ...Object.keys(Presets),
+        ...Object.keys(config.customPresets ?? {})
+    ]
 
     if (options.list) {
         if (options.todo) {
@@ -30,24 +37,21 @@ export async function moduleHandler(
         return
     }
 
-    const config = await loadConfig(process.cwd(), {
-        allowEmptyPresets: true
-    })
     const selected = presetName ?? config.presets[0]
 
     if (!selected) {
         throw new Error("No preset is enabled in hokit.config.ts.")
     }
 
-    if (!names.includes(selected as Preset)) {
+    if (!names.includes(selected)) {
         throw new Error(
             `Unknown preset "${selected}". Available presets: ${names.join(", ")}.`
         )
     }
 
-    if (!config.presets.includes(selected as Preset)) {
-        await addPresetToConfig(selected as Preset)
-        config.presets.push(selected as Preset)
+    if (!config.presets.includes(selected)) {
+        await addPresetToConfig(selected)
+        config.presets.push(selected)
         logger.info(`Enabled preset "${selected}" in hokit.config.ts.`)
     }
 
@@ -55,7 +59,7 @@ export async function moduleHandler(
         allowRoot: true
     })
     const file = join(directory, `${selected}.ts`)
-    const template = moduleTemplate(selected as Preset, {
+    const template = moduleTemplate(selected, {
         todo: options.todo ?? false
     })
 

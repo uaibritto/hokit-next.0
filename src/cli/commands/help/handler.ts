@@ -12,12 +12,15 @@ Commands
 
   init              Initializes a new Hokit project.
   build             Generates snippet files.
+    --include-todos  Includes pending snippets in a preview build.
   module [preset]   Creates a new snippet module.
     --list           Lists available presets.
-    --todo           Adds a Todo after the last snippet.
+    --todo           Marks the last snippet as pending.
   lint              Runs validation rules.
     --fix            Automatically fixes safe problems.
+    --json           Prints machine-readable diagnostics.
   doctor            Checks project health.
+  docs              Generates Markdown documentation by scope.
   clean             Removes generated files.
   info              Displays project information.
   watch             Watches files and rebuilds automatically.
@@ -34,6 +37,7 @@ Examples
   hokit lint
   hokit lint --fix
   hokit doctor
+  hokit docs
   hokit clean
   hokit info`)
 }
