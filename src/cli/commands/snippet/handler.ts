@@ -78,7 +78,16 @@ function addSnippetToModule(
     prefix: string,
     options: { todo?: boolean } = {}
 ) {
-    if (new RegExp(`declare\\s+${prefix}\\s*:`).test(source)) {
+    const existingSnippet = new RegExp(
+        `^[ \\t]*declare\\s+${prefix}\\s*:\\s*SnippetDefinition\\s*;?`,
+        "m"
+    ).exec(source)
+
+    if (existingSnippet && options.todo) {
+        return markExistingSnippetAsTodo(source, prefix)
+    }
+
+    if (existingSnippet) {
         throw new Error(`Snippet "${prefix}" already exists in ${preset}.ts.`)
     }
 
@@ -99,6 +108,38 @@ function addSnippetToModule(
     if (index === -1) throw new Error(`Could not update module "${preset}".`)
 
     return `${next.slice(0, index)}\n${snippet}${next.slice(index)}`
+}
+
+function markExistingSnippetAsTodo(source: string, prefix: string) {
+    const declaration = new RegExp(
+        `^[ \\t]*declare\\s+${prefix}\\s*:\\s*SnippetDefinition\\s*;?`,
+        "m"
+    ).exec(source)
+
+    if (!declaration?.index && declaration?.index !== 0) {
+        throw new Error("Could not mark snippet as pending.")
+    }
+
+    const beforeDeclaration = source.slice(0, declaration.index)
+    const snippetIndex = beforeDeclaration.lastIndexOf("@Snippet")
+
+    if (snippetIndex === -1) {
+        throw new Error("Could not mark snippet as pending.")
+    }
+
+    if (
+        source
+            .slice(Math.max(0, snippetIndex - 120), snippetIndex)
+            .includes("@Todo")
+    ) {
+        return addTodoImport(source)
+    }
+
+    const lineStart = source.lastIndexOf("\n", snippetIndex) + 1
+    const indentation = source.slice(lineStart, snippetIndex)
+    const withTodo = `${source.slice(0, snippetIndex)}@Todo("")\n${indentation}${source.slice(snippetIndex)}`
+
+    return addTodoImport(withTodo)
 }
 
 function addSnippetToTemplateIndex(source: string, prefix: string) {

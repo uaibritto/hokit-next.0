@@ -1,8 +1,6 @@
 <div align="center">
     <img src="https://xgjzloifyvgpbmyonaya.supabase.co/storage/v1/object/public/files/CLkIt_6NNL/original" alt="Logo" width="200" />
     <br />
-    <img src="./assets/hokit-mascot.svg" alt="Hokit bird mascot" width="180" />
-    <br />
     <h1>Hokit</h1>
     <p>A declarative snippet compiler based on decorators.</p>
 </div>
@@ -247,7 +245,7 @@ Snippet prefixes used through the CLI must start with a letter and may contain o
 
 ### `hokit todo --[preset] [prefix]`
 
-Creates the same files as `hokit snippet`, but marks the generated snippet as pending.
+Creates the same files as `hokit snippet`, but marks the generated snippet as pending. If the snippet already exists, Hokit only adds `@Todo("")` to that snippet instead of creating a duplicate.
 
 ```sh
 hokit todo --tsx raf

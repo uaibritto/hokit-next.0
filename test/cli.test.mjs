@@ -259,12 +259,32 @@ test("all CLI commands work in a real project", async () => {
                     'description: "Create an arrow component"'
                 )
         )
+        result = await run(project, "snippet", "--jsx", "jx")
+        assert.equal(result.code, 0, result.stderr)
+        await writeFile(
+            join(project, "src/templates/jsx/jx.ts"),
+            'export const jx = ["$0"]\n'
+        )
+        await writeFile(
+            join(project, "src/modules/jsx.ts"),
+            (await readFile(join(project, "src/modules/jsx.ts"), "utf8"))
+                .replace('name: ""', 'name: "jsx pending"')
+                .replace('description: ""', 'description: "jsx pending"')
+        )
+        result = await run(project, "todo", "--jsx", "jx")
+        assert.equal(result.code, 0, result.stderr)
+        const jsxModule = await readFile(
+            join(project, "src/modules/jsx.ts"),
+            "utf8"
+        )
+        assert.match(jsxModule, /Snippet, Todo, type SnippetDefinition/)
+        assert.match(jsxModule, /@Todo\(""\)\n\s+@Snippet/)
 
         result = await run(project, "module", "--empty")
         assert.equal(result.code, 0, result.stderr)
         assert.match(
             await readFile(configPath, "utf8"),
-            /presets:\s*\["tsx", "empty"\]/
+            /presets:\s*\["tsx", "jsx", "empty"\]/
         )
 
         const emptyModule = join(project, "src/modules/empty.ts")
@@ -334,11 +354,10 @@ export class TsxExtraModule {
         assert.equal(result.code, 0, result.stderr)
         const lintJson = JSON.parse(result.stdout)
         assert.equal(lintJson.valid, true)
-        assert.equal(lintJson.todos[0].code, "TODO")
-        assert.equal(
-            lintJson.todos[0].location.file.endsWith("javascript.ts"),
-            true
+        const javascriptTodo = lintJson.todos.find((todo) =>
+            todo.location.file.endsWith("javascript.ts")
         )
+        assert.equal(javascriptTodo.code, "TODO")
 
         await writeFile(
             configPath,
