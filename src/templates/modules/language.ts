@@ -19,7 +19,18 @@ const Languages: Record<LanguagePreset, LanguageTemplateConfig> = {
     zig: { acronym: "zig", className: "ZigModule" },
     c: { acronym: "c", className: "CModule" },
     cpp: { acronym: "cpp", className: "CppModule" },
-    javascript: { acronym: "js", className: "JavascriptModule" }
+    javascript: { acronym: "js", className: "JavascriptModule" },
+    typescript: { acronym: "ts", className: "TypescriptModule" },
+    java: { acronym: "jav", className: "JavaModule" },
+    csharp: { acronym: "cs", className: "CsharpModule" },
+    go: { acronym: "go", className: "GoModule" },
+    json: { acronym: "json", className: "JsonModule" },
+    shellscript: { acronym: "sh", className: "ShellModule" },
+    dart: { acronym: "dart", className: "DartModule" },
+    html: { acronym: "html", className: "HtmlModule" },
+    julia: { acronym: "jl", className: "JuliaModule" },
+    lua: { acronym: "lua", className: "LuaModule" },
+    perl: { acronym: "pl", className: "PerlModule" }
 }
 
 export function languageSnippetKey(preset: LanguagePreset) {

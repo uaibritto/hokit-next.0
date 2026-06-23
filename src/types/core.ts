@@ -1,16 +1,27 @@
 export const PRESETS = {
+    typescript: "typescript",
     tsx: "tsx",
+    javascript: "javascript",
     jsx: "jsx",
     swift: "swift",
     kotlin: "kotlin",
     python: "python",
+    java: "java",
+    csharp: "csharp",
     php: "php",
     ruby: "ruby",
     rust: "rust",
     zig: "zig",
     c: "c",
     cpp: "cpp",
-    javascript: "javascript",
+    dart: "dart",
+    go: "go",
+    html: "html",
+    json: "json",
+    julia: "julia",
+    lua: "lua",
+    perl: "perl",
+    shellscript: "shellscript",
     empty: "empty"
 } as const
 

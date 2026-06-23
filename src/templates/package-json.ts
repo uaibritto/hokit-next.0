@@ -4,7 +4,8 @@ const DevDependencyVersions = {
     "@vscode/vsce": "^3.9.2",
     ovsx: "^1.0.2",
     oxfmt: "^0.56.0",
-    typescript: "^6.0.3"
+    typescript: "^6.0.3",
+    hokit: `^${VERSION}`
 }
 
 export function packageJsonTemplate(): string {
@@ -36,9 +37,6 @@ export function packageJsonTemplate(): string {
                 package: "vsce package --out <out>",
                 "vscode:pub": "vsce publish <.vsix>",
                 "cursor:pub": "ovsx publish <.vsix>"
-            },
-            dependencies: {
-                hokit: `^${VERSION}`
             },
             devDependencies: DevDependencyVersions,
             contributes: {
