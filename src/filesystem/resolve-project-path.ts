@@ -11,7 +11,6 @@ export function resolveProjectPath(
     candidate: string,
     options: ResolveProjectPathOptions = {}
 ) {
-    // `relative` revela caminhos externos e tentativas de escapar usando `..`.
     const projectRoot = resolve(root)
     const path = isAbsolute(candidate)
         ? resolve(candidate)

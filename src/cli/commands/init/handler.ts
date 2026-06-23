@@ -10,6 +10,7 @@ import {
     moduleTemplate,
     oxfmtTemplate,
     packageJsonTemplate,
+    emptyTemplateIndexTemplate,
     tsconfigTemplate,
     vscodeSettingsTemplate
 } from "@hokit/templates"
@@ -34,7 +35,6 @@ async function exists(path: string) {
 }
 
 async function detectPackageManager() {
-    // Prioriza quem invocou a CLI e usa lockfiles apenas como fallback.
     const userAgent = process.env.npm_config_user_agent?.split("/")[0]
 
     if (["npm", "pnpm", "yarn", "bun"].includes(userAgent ?? "")) {
@@ -86,8 +86,8 @@ async function installDependencies() {
 }
 
 export async function initHandler() {
-    // `wx` nos arquivos abaixo garante que o init nunca sobrescreva trabalho existente.
     await mkdir("src/modules", { recursive: true })
+    await mkdir("src/templates/tsx", { recursive: true })
     await mkdir(".vscode", { recursive: true })
 
     const files = [
@@ -98,6 +98,7 @@ export async function initHandler() {
         [".editorconfig", editorconfigTemplate()],
         [".vscode/settings.json", vscodeSettingsTemplate()],
         [".gitignore", gitignoreTemplate()],
+        ["src/templates/tsx/index.ts", emptyTemplateIndexTemplate()],
         ["src/modules/tsx.ts", moduleTemplate("tsx")]
     ] as const
 

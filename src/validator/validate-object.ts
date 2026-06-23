@@ -1,9 +1,6 @@
 import { VALIDATION_RULES } from "@hokit/metadata/keys"
 import type { RegisteredValidationRule, ValidationIssue } from "@hokit/types"
 
-/**
- * Valida um objeto individual usando uma classe-schema.
- */
 export function validateObject<T extends object>(
     schema: Function,
     value: T

@@ -9,14 +9,6 @@ import ts from "typescript"
 
 import { resolveModulePath } from "./resolve-module-path"
 
-/**
- * Procura todos os módulos
- * e os importa dinamicamente.
- *
- * Ao importar:
- *
- * Decorators executam.
- */
 export async function loadModules(cwd: string) {
     const files = await glob("**/*.ts", {
         cwd,
@@ -24,11 +16,9 @@ export async function loadModules(cwd: string) {
     })
 
     for (const file of files) {
-        // Guardamos o estado anterior para descobrir quais classes vieram deste arquivo.
         const knownModules = new Set(storage.modules)
         const source = await readFile(file, "utf8")
         const transpiled = ts.transpileModule(source, {
-            // O compilador oficial aceita decorators em propriedades `declare`.
             fileName: file,
             compilerOptions: {
                 target: ts.ScriptTarget.ES2022,
@@ -55,14 +45,12 @@ export async function loadModules(cwd: string) {
         )
 
         try {
-            // O arquivo temporário fica ao lado do original para preservar imports relativos.
             await writeFile(temporary, transpiled.outputText, {
                 flag: "wx",
                 mode: 0o600
             })
             await tsImport(resolveModulePath(temporary), import.meta.url)
 
-            // Associa as classes registradas durante este import ao arquivo original.
             for (const module of storage.modules) {
                 if (!knownModules.has(module)) storage.sources.set(module, file)
             }

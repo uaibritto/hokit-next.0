@@ -1,4 +1,3 @@
-/** Dados declarativos que serão convertidos ao schema do editor. */
 export interface SnippetConfig {
     name: string
     prefix: string

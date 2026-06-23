@@ -2,10 +2,6 @@ import { PresetError } from "@hokit/errors"
 import { Presets } from "@hokit/presets/registry"
 import type { BuildConfig, PresetConfig, PresetName } from "@hokit/types"
 
-/**
- * Resolve presets padrão
- * + overrides do usuário.
- */
 export function resolvePresets(config: BuildConfig) {
     const resolved: Partial<Record<PresetName, PresetConfig>> = {}
 

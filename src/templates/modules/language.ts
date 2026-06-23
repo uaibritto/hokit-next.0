@@ -22,11 +22,14 @@ const Languages: Record<LanguagePreset, LanguageTemplateConfig> = {
     javascript: { acronym: "js", className: "JavascriptModule" }
 }
 
+export function languageSnippetKey(preset: LanguagePreset) {
+    return Languages[preset].acronym
+}
+
 export interface ModuleTemplateOptions {
     todo?: boolean
 }
 
-/** Renderiza o módulo inicial de uma linguagem oficial. */
 export function languageModuleTemplate(
     preset: LanguagePreset,
     options: ModuleTemplateOptions = {}

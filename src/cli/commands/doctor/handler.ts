@@ -6,7 +6,6 @@ import { resolveOutputPath } from "@hokit/filesystem/resolve-output-path"
 import { resolveProjectPath } from "@hokit/filesystem/resolve-project-path"
 import { logger } from "@hokit/logger"
 
-/** Executa verificações independentes sobre a saúde do projeto. */
 export async function doctorHandler() {
     const checks: Array<[string, () => Promise<void> | void]> = [
         [

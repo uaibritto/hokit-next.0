@@ -5,10 +5,6 @@ import { dirname } from "node:path"
 import { resolveProjectPath } from "@hokit/filesystem/resolve-project-path"
 import type { CompiledModule, Schema } from "@hokit/types"
 
-/**
- * Recebe um schema
- * e grava o resultado.
- */
 export async function writeSchema(
     module: CompiledModule,
     schema: Schema,
@@ -23,7 +19,6 @@ export async function writeSchema(
     })
 
     try {
-        // Rename no mesmo diretório troca o arquivo final de maneira atômica.
         await writeFile(temporary, `${content}\n`, {
             flag: "wx",
             mode: 0o600

@@ -19,8 +19,6 @@ export function scanModules(): ScannedModule[] {
     const modules: ScannedModule[] = []
 
     for (const ctor of storage.modules) {
-        // Decorators conhecem classe e propriedade, mas não arquivo/linha.
-        // A AST original completa essa informação para diagnósticos e documentação.
         const sourcePath = storage.sources.get(ctor)
         const locations = new Map<
             string,
@@ -64,7 +62,6 @@ export function scanModules(): ScannedModule[] {
             []) as RegisteredTodo[]
 
         const mappedSnippets = snippets.map((snippet) => {
-            // Todo e Snippet se relacionam pela mesma chave de propriedade.
             const todo = todos.find(
                 (item) => item.propertyKey === snippet.propertyKey
             )

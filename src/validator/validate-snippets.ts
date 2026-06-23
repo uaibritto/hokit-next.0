@@ -9,12 +9,6 @@ import type {
 import { SnippetFields } from "./schemas/snippet-fields"
 import { validateObject } from "./validate-object"
 
-/**
- * Valida a lista completa de snippets.
- *
- * Essa função será usada tanto pelo build
- * quanto pelo futuro comando `hokit lint`.
- */
 export function validateSnippets(snippets: SnippetConfig[]): ValidationResult {
     const issues: ValidationIssue[] = []
 

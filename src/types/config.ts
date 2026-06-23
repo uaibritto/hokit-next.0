@@ -1,7 +1,6 @@
 import type { PresetName, Target } from "./core"
 import type { PresetConfig } from "./preset"
 
-/** Contrato completo aceito por `defineConfig`. */
 export interface BuildConfig {
     cwd: string
     presets: PresetName[]

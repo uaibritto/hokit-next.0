@@ -30,7 +30,6 @@ async function writeDocument(path: string, content: string) {
 }
 
 function renderSnippet(root: string, entry: DocumentedSnippet) {
-    // Cada bloco registra também status e origem para funcionar como inventário.
     const { snippet, preset } = entry
     const status = snippet.todo ? `Pending — ${snippet.todo}` : "Available"
     const source = snippet.location
@@ -51,7 +50,6 @@ ${snippet.config.body.join("\n")}
 `
 }
 
-/** Gera um índice e uma página Markdown para cada escopo configurado. */
 export async function generateDocs(config: BuildConfig, root = process.cwd()) {
     const modulesDirectory = resolveProjectPath(root, config.cwd, {
         allowRoot: true
@@ -68,7 +66,6 @@ export async function generateDocs(config: BuildConfig, root = process.cwd()) {
     const presets = resolvePresets(config)
     const groups = new Map<string, DocumentedSnippet[]>()
 
-    // Presets com vários escopos publicam o snippet em cada página relevante.
     for (const module of modules) {
         const preset = presets[module.module.preset]
         if (!preset) continue

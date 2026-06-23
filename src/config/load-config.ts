@@ -5,11 +5,6 @@ import { ConfigError } from "@hokit/errors"
 import type { BuildConfig } from "@hokit/types"
 import { tsImport } from "tsx/esm/api"
 
-/**
- * Carrega:
- *
- * hokit.config.ts
- */
 export interface LoadConfigOptions {
     allowEmptyPresets?: boolean
 }

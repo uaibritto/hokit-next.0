@@ -1,9 +1,5 @@
 import type { Schema } from "@hokit/types"
 
-/**
- * Formato de snippets
- * utilizado pelo VSCode.
- */
 export const VSCodeSchema: Schema = {
     serialize(module) {
         const output: Record<string, unknown> = {}

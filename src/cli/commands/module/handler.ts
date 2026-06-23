@@ -6,7 +6,7 @@ import { loadConfig } from "@hokit/config/load-config"
 import { resolveProjectPath } from "@hokit/filesystem/resolve-project-path"
 import { logger } from "@hokit/logger"
 import { Presets } from "@hokit/presets/registry"
-import { moduleTemplate } from "@hokit/templates"
+import { emptyTemplateIndexTemplate, moduleTemplate } from "@hokit/templates"
 import type { PresetName } from "@hokit/types"
 
 import { addTodoToModule } from "./add-todo-to-module"
@@ -16,7 +16,6 @@ export interface ModuleOptions {
     todo?: boolean
 }
 
-/** Cria módulos, habilita presets e aplica a opção de pendência. */
 export async function moduleHandler(
     presetName?: string,
     options: ModuleOptions = {}
@@ -59,11 +58,27 @@ export async function moduleHandler(
         allowRoot: true
     })
     const file = join(directory, `${selected}.ts`)
+    const templateDirectory = resolveProjectPath(
+        process.cwd(),
+        `src/templates/${selected}`,
+        { allowRoot: true }
+    )
+    const templateFile = join(templateDirectory, "index.ts")
     const template = moduleTemplate(selected, {
         todo: options.todo ?? false
     })
 
     await mkdir(directory, { recursive: true })
+    await mkdir(templateDirectory, { recursive: true })
+
+    try {
+        await writeFile(templateFile, emptyTemplateIndexTemplate(), {
+            flag: "wx",
+            mode: 0o644
+        })
+    } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error
+    }
 
     try {
         await writeFile(file, template, { flag: "wx", mode: 0o644 })

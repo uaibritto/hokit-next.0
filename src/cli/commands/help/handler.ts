@@ -13,9 +13,11 @@ Commands
   init              Initializes a new Hokit project.
   build             Generates snippet files.
     --include-todos  Includes pending snippets in a preview build.
-  module [preset]   Creates a new snippet module.
+  module --[preset] Creates a new snippet module.
     --list           Lists available presets.
     --todo           Marks the last snippet as pending.
+  snippet --[preset] [prefix]
+                    Adds a snippet to an existing module.
   lint              Runs validation rules.
     --fix            Automatically fixes safe problems.
     --json           Prints machine-readable diagnostics.
@@ -29,8 +31,9 @@ Commands
 Examples
 
   hokit init
-  hokit module tsx
-  hokit module tsx --todo
+  hokit module --tsx
+  hokit module --tsx --todo
+  hokit snippet --tsx rfc
   hokit module --todo
   hokit module --list
   hokit build

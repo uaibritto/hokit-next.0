@@ -1,6 +1,5 @@
 import type { SnippetConfig } from "./snippet"
 
-/** Posição original usada para mensagens de erro e integrações com editores. */
 export interface SourceLocation {
     file: string
     line: number

@@ -18,15 +18,9 @@ export async function build(
     root = process.cwd(),
     options: BuildOptions = {}
 ) {
-    /**
-     * Carrega módulos.
-     */
     storage.clear()
     await loadModules(resolveProjectPath(root, config.cwd, { allowRoot: true }))
 
-    /**
-     * Resolve presets.
-     */
     const presets = resolvePresets(config)
     const schema = Schemas[config.target ?? "vscode"]
 
@@ -34,14 +28,8 @@ export async function build(
         throw new Error(`Schema "${config.target}" not found.`)
     }
 
-    /**
-     * Escaneia metadata.
-     */
     const modules = scanModules()
 
-    /**
-     * Compila módulos.
-     */
     const grouped = new Map<string, ScannedModule[]>()
 
     for (const module of modules) {

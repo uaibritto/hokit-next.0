@@ -2,7 +2,6 @@ import { readFile, writeFile } from "node:fs/promises"
 
 import ts from "typescript"
 
-/** Limita o autofix a mudanças determinísticas e seguras. */
 function fixSnippetObject(
     node: ts.ObjectLiteralExpression,
     factory: ts.NodeFactory

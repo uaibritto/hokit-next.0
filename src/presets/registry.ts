@@ -15,7 +15,6 @@ import {
 } from "@hokit/presets"
 import type { Preset, PresetConfig } from "@hokit/types"
 
-/** Fonte única dos presets distribuídos oficialmente. */
 export const Presets = {
     tsx: TsxPreset,
     jsx: JsxPreset,

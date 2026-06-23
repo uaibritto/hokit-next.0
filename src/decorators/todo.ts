@@ -8,7 +8,6 @@ interface RegisteredTodo {
 
 export function Todo(message: string): PropertyDecorator {
     return (target, propertyKey) => {
-        // A ligação com Snippet será validada depois pela propertyKey compartilhada.
         const ctor = target.constructor
         const todos = Reflect.getOwnMetadata(TODOS_METADATA, ctor) ?? []
 

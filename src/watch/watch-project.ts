@@ -4,7 +4,6 @@ import type { BuildConfig } from "@hokit/types"
 import chokidar from "chokidar"
 
 export async function watchProject(config: BuildConfig) {
-    // Estes estados serializam builds disparados por alterações rápidas.
     let running = false
     let queued = false
 

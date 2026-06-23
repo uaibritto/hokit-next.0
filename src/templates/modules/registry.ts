@@ -2,9 +2,12 @@ import { PRESETS, type PresetName } from "@hokit/types"
 
 import { customModuleTemplate } from "./custom"
 import { emptyModuleTemplate } from "./empty"
-import { languageModuleTemplate, type ModuleTemplateOptions } from "./language"
+import {
+    languageModuleTemplate,
+    languageSnippetKey,
+    type ModuleTemplateOptions
+} from "./language"
 
-/** Seleciona template oficial, vazio ou personalizado. */
 export function moduleTemplate(
     preset: PresetName,
     options: ModuleTemplateOptions = {}
@@ -17,4 +20,14 @@ export function moduleTemplate(
         )
     }
     return customModuleTemplate(preset, options)
+}
+
+export function moduleTemplateKey(preset: PresetName) {
+    if (preset === "empty") return "empty"
+    if (preset in PRESETS) {
+        return languageSnippetKey(
+            preset as Exclude<keyof typeof PRESETS, "empty">
+        )
+    }
+    return preset.replaceAll(/[^a-zA-Z0-9_$]/g, "_")
 }

@@ -1,6 +1,5 @@
 import type { PresetConfig, Scope } from "@hokit/types"
 
-/** Aplica a convenção de saída dos presets oficiais. */
 function languagePreset(name: string, scope: Scope): PresetConfig {
     return {
         output: `dist/${name}.json`,

@@ -8,13 +8,19 @@ const command = process.argv[2]
 const args = process.argv.slice(3)
 const flags = new Set(args.filter((argument) => argument.startsWith("--")))
 
+function pickPresetFlag(knownFlags: string[]) {
+    return args
+        .filter((argument) => argument.startsWith("--"))
+        .find((argument) => !knownFlags.includes(argument))
+        ?.slice(2)
+}
+
 function rejectUnknownFlags(allowed: string[]) {
     const unknown = [...flags].filter((flag) => !allowed.includes(flag))
     if (unknown[0]) throw new Error(`Unknown flag "${unknown[0]}".`)
 }
 
 try {
-    // Flags globais funcionam sem exigir um comando explícito.
     if (command === "--version" || flags.has("--version")) {
         console.log(VERSION)
         process.exitCode = 0
@@ -22,7 +28,6 @@ try {
         await Commands.help()
     } else {
         switch (command) {
-            // O parser só traduz argumentos; regras de negócio ficam nos handlers.
             case "init":
                 rejectUnknownFlags([])
                 await Commands.init()
@@ -38,13 +43,34 @@ try {
                 break
 
             case "module":
-                rejectUnknownFlags(["--list", "--todo"])
+                rejectUnknownFlags([
+                    "--list",
+                    "--todo",
+                    ...args
+                        .filter((argument) => argument.startsWith("--"))
+                        .filter(
+                            (argument) =>
+                                !["--list", "--todo"].includes(argument)
+                        )
+                ])
                 await Commands.module(
-                    args.find((argument) => !argument.startsWith("--")),
+                    pickPresetFlag(["--list", "--todo"]) ??
+                        args.find((argument) => !argument.startsWith("--")),
                     {
                         list: flags.has("--list"),
                         todo: flags.has("--todo")
                     }
+                )
+
+                break
+
+            case "snippet":
+                rejectUnknownFlags([
+                    ...args.filter((argument) => argument.startsWith("--"))
+                ])
+                await Commands.snippet(
+                    pickPresetFlag([]),
+                    args.find((argument) => !argument.startsWith("--"))
                 )
 
                 break

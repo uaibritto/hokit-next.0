@@ -5,7 +5,6 @@ import { resolvePresets } from "@hokit/config/resolve-presets"
 import { resolveOutputPath } from "@hokit/filesystem/resolve-output-path"
 import { logger } from "@hokit/logger"
 
-/** Remove somente destinos de presets validados como seguros. */
 export async function cleanHandler() {
     const config = await loadConfig()
 

@@ -9,7 +9,6 @@ interface RegisteredSnippet {
 
 export function Snippet(config: SnippetConfig): PropertyDecorator {
     return (target, propertyKey) => {
-        // getOwnMetadata evita herdar e modificar arrays de uma classe-base.
         const ctor = target.constructor
         const snippets = Reflect.getOwnMetadata(SNIPPETS_METADATA, ctor) ?? []
 

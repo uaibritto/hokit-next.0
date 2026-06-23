@@ -25,7 +25,6 @@ function formatLocation(location?: {
 }
 
 async function inspect() {
-    // Reimporta os módulos para trabalhar sempre com metadata atualizada.
     const config = await loadConfig()
     const directory = resolveProjectPath(process.cwd(), config.cwd, {
         allowRoot: true
@@ -35,7 +34,6 @@ async function inspect() {
     const modules = scanModules()
     const grouped = new Map<string, typeof modules>()
 
-    // Regras de unicidade são avaliadas no conjunto inteiro de cada preset.
     for (const module of modules) {
         const entries = grouped.get(module.module.preset) ?? []
         entries.push(module)
@@ -57,7 +55,6 @@ async function inspect() {
     })
 
     for (const module of modules) {
-        // Todo sem Snippet é erro; Todo associado vira aviso mais abaixo.
         const snippetProperties = new Set(
             module.snippets.map((snippet) => snippet.propertyKey)
         )
@@ -107,7 +104,6 @@ export async function lintHandler(options: LintOptions = {}) {
     }
 
     if (options.json) {
-        // stdout contém somente JSON para ser consumido por CI e extensões.
         console.log(
             JSON.stringify(
                 {

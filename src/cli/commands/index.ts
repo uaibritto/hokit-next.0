@@ -7,6 +7,7 @@ import { infoCommand } from "./info/command"
 import { initCommand } from "./init/command"
 import { lintCommand } from "./lint/command"
 import { moduleCommand } from "./module/command"
+import { snippetCommand } from "./snippet/command"
 import { watchCommand } from "./watch/command"
 
 export const Commands = {
@@ -27,6 +28,8 @@ export const Commands = {
     lint: lintCommand,
 
     module: moduleCommand,
+
+    snippet: snippetCommand,
 
     watch: watchCommand
 }

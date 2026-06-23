@@ -18,7 +18,6 @@ function hasDecorator(node: ts.Node, name: string) {
 }
 
 export async function addTodoToModule(path: string) {
-    // Parseia o arquivo sem executar código do projeto.
     const source = await readFile(path, "utf8")
     const file = ts.createSourceFile(
         path,
@@ -70,7 +69,6 @@ export async function addTodoToModule(path: string) {
     )
 
     if (!hasTodoImport) {
-        // Imports de valor ficam antes dos imports marcados com `type`.
         const firstTypeImport = imports.elements.find(
             (element) => element.isTypeOnly
         )
@@ -93,7 +91,6 @@ export async function addTodoToModule(path: string) {
 
     let content = source
 
-    // Mudanças de trás para frente não invalidam offsets da AST original.
     for (const change of changes.sort(
         (left, right) => right.position - left.position
     )) {

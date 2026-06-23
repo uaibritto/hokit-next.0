@@ -102,6 +102,10 @@ test("all CLI commands work in a real project", async () => {
         )
         assert.match(initializedModule, /declare tsx: SnippetDefinition/)
         assert.doesNotMatch(initializedModule, /@Todo/)
+        assert.equal(
+            await readFile(join(project, "src/templates/tsx/index.ts"), "utf8"),
+            "export const template = {}\n"
+        )
 
         result = await run(project, "module", "--todo")
         assert.equal(result.code, 0, result.stderr)
@@ -123,6 +127,11 @@ test("all CLI commands work in a real project", async () => {
             JSON.parse(await readFile(join(project, "package.json"), "utf8"))
                 .name,
             "hokit-project"
+        )
+        assert.equal(
+            JSON.parse(await readFile(join(project, "package.json"), "utf8"))
+                .contributes.snippets[0].path,
+            "./dist/tsx.json"
         )
         assert.equal(
             JSON.parse(await readFile(join(project, "tsconfig.json"), "utf8"))
@@ -186,15 +195,42 @@ test("all CLI commands work in a real project", async () => {
         )
         await rm(join(project, "src/modules/tsx.ts"))
 
-        result = await run(project, "module", "tsx")
+        result = await run(project, "module", "--tsx")
         assert.equal(result.code, 0, result.stderr)
         assert.match(await readFile(configPath, "utf8"), /presets:\s*\["tsx"\]/)
         assert.match(
             await readFile(join(project, "src/modules/tsx.ts"), "utf8"),
             /class TsxModule/
         )
+        assert.equal(
+            await readFile(join(project, "src/templates/tsx/index.ts"), "utf8"),
+            "export const template = {}\n"
+        )
 
-        result = await run(project, "module", "empty")
+        result = await run(project, "snippet", "--tsx", "rfc")
+        assert.equal(result.code, 0, result.stderr)
+        assert.match(
+            await readFile(join(project, "src/templates/tsx/rfc.ts"), "utf8"),
+            /export const rfc = \[\]/
+        )
+        assert.match(
+            await readFile(join(project, "src/templates/tsx/index.ts"), "utf8"),
+            /import \{ rfc \} from "\.\/rfc"/
+        )
+        assert.match(
+            await readFile(join(project, "src/templates/tsx/index.ts"), "utf8"),
+            /template = \{\n\s+rfc\n\}/
+        )
+        assert.match(
+            await readFile(join(project, "src/modules/tsx.ts"), "utf8"),
+            /body: template\.rfc/
+        )
+        await writeFile(
+            join(project, "src/templates/tsx/rfc.ts"),
+            'export const rfc = ["$0"]\n'
+        )
+
+        result = await run(project, "module", "--empty")
         assert.equal(result.code, 0, result.stderr)
         assert.match(
             await readFile(configPath, "utf8"),

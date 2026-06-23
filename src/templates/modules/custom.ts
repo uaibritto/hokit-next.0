@@ -1,6 +1,5 @@
 import type { ModuleTemplateOptions } from "./language"
 
-/** Cria um módulo mínimo para presets definidos pelo próprio projeto. */
 export function customModuleTemplate(
     preset: string,
     options: ModuleTemplateOptions = {}

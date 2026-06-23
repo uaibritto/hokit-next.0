@@ -1,6 +1,6 @@
 node_modules
 dist
-/docs/snippets/
+/docs/internal/
 coverage
 .DS_Store
 .pnpm-store
