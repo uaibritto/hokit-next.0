@@ -113,6 +113,11 @@ try {
             case "snippet":
                 {
                     const parsed = pickPresetAndPrefix(["--list"])
+                    if (flags.has("--list") && positionals.length > 0) {
+                        throw new Error(
+                            'Command "snippet --list" takes no prefix.'
+                        )
+                    }
                     await Commands.snippet(parsed.preset, parsed.prefix, {
                         list: flags.has("--list")
                     })
@@ -123,6 +128,11 @@ try {
             case "todo":
                 {
                     const parsed = pickPresetAndPrefix(["--list"])
+                    if (flags.has("--list") && positionals.length > 0) {
+                        throw new Error(
+                            'Command "todo --list" takes no prefix.'
+                        )
+                    }
                     await Commands.todo(parsed.preset, parsed.prefix, {
                         list: flags.has("--list")
                     })

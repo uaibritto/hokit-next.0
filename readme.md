@@ -300,6 +300,8 @@ hokit watch
 
 ### `hokit help`
 
+Displays a formatted command reference with grouped commands, flags, and examples.
+
 ```sh
 hokit help
 hokit --help

@@ -174,6 +174,12 @@ test("all CLI commands work in a real project", async () => {
         result = await run(project, "module", "--list", "tsx")
         assert.equal(result.code, 1)
         assert.match(result.stderr, /takes no preset/)
+        result = await run(project, "snippet", "--list", "rfc")
+        assert.equal(result.code, 1)
+        assert.match(result.stderr, /takes no prefix/)
+        result = await run(project, "todo", "--list", "raf")
+        assert.equal(result.code, 1)
+        assert.match(result.stderr, /takes no prefix/)
 
         const configPath = join(project, "hokit.config.ts")
 
@@ -452,7 +458,10 @@ export class TsxExtraModule {
 
         result = await run(project, "help")
         assert.equal(result.code, 0, result.stderr)
-        assert.match(result.stdout, /hokit <command>/)
+        assert.match(result.stdout, /Usage:/)
+        assert.match(result.stdout, /Commands:/)
+        assert.match(result.stdout, /Flags:/)
+        assert.match(result.stdout, /Examples:/)
 
         const orphanTodo = join(project, "src/modules/orphan.ts")
         await writeFile(
