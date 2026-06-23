@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process"
-import { access, mkdir, writeFile } from "node:fs/promises"
+import { mkdir, writeFile } from "node:fs/promises"
 
 import { BuildError } from "@hokit/errors"
 import { logger } from "@hokit/logger"
@@ -7,13 +7,13 @@ import {
     editorconfigTemplate,
     gitignoreTemplate,
     hokitConfigTemplate,
-    moduleTemplate,
     oxfmtTemplate,
     packageJsonTemplate,
-    emptyTemplateIndexTemplate,
     tsconfigTemplate,
     vscodeSettingsTemplate
 } from "@hokit/templates"
+
+type PackageManager = "bun" | "nub" | "pnpm" | "npm" | "yarn"
 
 async function createFile(path: string, content: string) {
     try {
@@ -25,25 +25,25 @@ async function createFile(path: string, content: string) {
     }
 }
 
-async function exists(path: string) {
-    try {
-        await access(path)
-        return true
-    } catch {
-        return false
-    }
+async function commandExists(command: PackageManager) {
+    return await new Promise<boolean>((resolveCommand) => {
+        const child = spawn(command, ["--version"], {
+            shell: false,
+            stdio: "ignore"
+        })
+
+        child.once("error", () => resolveCommand(false))
+        child.once("exit", (code) => resolveCommand(code === 0))
+    })
 }
 
-async function detectPackageManager() {
-    const userAgent = process.env.npm_config_user_agent?.split("/")[0]
+async function detectPackageManager(): Promise<PackageManager> {
+    const candidates: PackageManager[] = ["bun", "nub", "pnpm", "npm", "yarn"]
 
-    if (["npm", "pnpm", "yarn", "bun"].includes(userAgent ?? "")) {
-        return userAgent as "npm" | "pnpm" | "yarn" | "bun"
+    for (const candidate of candidates) {
+        if (await commandExists(candidate)) return candidate
     }
 
-    if (await exists("pnpm-lock.yaml")) return "pnpm"
-    if ((await exists("bun.lock")) || (await exists("bun.lockb"))) return "bun"
-    if (await exists("yarn.lock")) return "yarn"
     return "npm"
 }
 
@@ -87,7 +87,7 @@ async function installDependencies() {
 
 export async function initHandler() {
     await mkdir("src/modules", { recursive: true })
-    await mkdir("src/templates/tsx", { recursive: true })
+    await mkdir("src/templates", { recursive: true })
     await mkdir(".vscode", { recursive: true })
 
     const files = [
@@ -97,9 +97,7 @@ export async function initHandler() {
         [".oxfmtrc.json", oxfmtTemplate()],
         [".editorconfig", editorconfigTemplate()],
         [".vscode/settings.json", vscodeSettingsTemplate()],
-        [".gitignore", gitignoreTemplate()],
-        ["src/templates/tsx/index.ts", emptyTemplateIndexTemplate()],
-        ["src/modules/tsx.ts", moduleTemplate("tsx")]
+        [".gitignore", gitignoreTemplate()]
     ] as const
 
     let created = 0

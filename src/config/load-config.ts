@@ -51,6 +51,14 @@ export async function loadConfig(
         throw new ConfigError('The config field "cwd" must be a directory.')
     }
 
+    if (value.output === undefined) {
+        value.output = "dist"
+    }
+
+    if (typeof value.output !== "string" || value.output.trim().length === 0) {
+        throw new ConfigError('The config field "output" must be a directory.')
+    }
+
     if (!Array.isArray(value.presets)) {
         throw new ConfigError('The config field "presets" must be an array.')
     }

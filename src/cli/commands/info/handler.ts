@@ -9,6 +9,6 @@ export async function infoHandler() {
     console.log(`Hokit ${VERSION}
 Project: ${process.cwd()}
 Modules: ${config.cwd}
-Target: ${config.target ?? "vscode"}
+Output: ${config.output}
 Presets: ${Object.keys(presets).join(", ")}`)
 }

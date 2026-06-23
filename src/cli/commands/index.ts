@@ -1,6 +1,5 @@
 import { buildCommand } from "./build/command"
 import { cleanCommand } from "./clean/command"
-import { docsCommand } from "./docs/command"
 import { doctorCommand } from "./doctor/command"
 import { helpCommand } from "./help/command"
 import { infoCommand } from "./info/command"
@@ -8,6 +7,7 @@ import { initCommand } from "./init/command"
 import { lintCommand } from "./lint/command"
 import { moduleCommand } from "./module/command"
 import { snippetCommand } from "./snippet/command"
+import { todoCommand } from "./todo/command"
 import { watchCommand } from "./watch/command"
 
 export const Commands = {
@@ -16,8 +16,6 @@ export const Commands = {
     clean: cleanCommand,
 
     doctor: doctorCommand,
-
-    docs: docsCommand,
 
     help: helpCommand,
 
@@ -30,6 +28,8 @@ export const Commands = {
     module: moduleCommand,
 
     snippet: snippetCommand,
+
+    todo: todoCommand,
 
     watch: watchCommand
 }

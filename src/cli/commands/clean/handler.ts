@@ -1,4 +1,5 @@
 import { rm } from "node:fs/promises"
+import { join } from "node:path"
 
 import { loadConfig } from "@hokit/config/load-config"
 import { resolvePresets } from "@hokit/config/resolve-presets"
@@ -10,13 +11,13 @@ export async function cleanHandler() {
 
     const presets = resolvePresets(config)
 
-    for (const preset of Object.values(presets)) {
+    for (const [name, preset] of Object.entries(presets)) {
         if (!preset) continue
 
         const output = resolveOutputPath(
             process.cwd(),
             config.cwd,
-            preset.output
+            join(config.output, `${name}.json`)
         )
 
         await rm(output, {

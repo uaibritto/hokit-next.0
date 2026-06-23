@@ -26,28 +26,12 @@ export function languageSnippetKey(preset: LanguagePreset) {
     return Languages[preset].acronym
 }
 
-export interface ModuleTemplateOptions {
-    todo?: boolean
-}
-
-export function languageModuleTemplate(
-    preset: LanguagePreset,
-    options: ModuleTemplateOptions = {}
-) {
+export function languageModuleTemplate(preset: LanguagePreset) {
     const language = Languages[preset]
-    const todoImport = options.todo ? ", Todo" : ""
-    const todo = options.todo ? `    @Todo("Future implementation")\n` : ""
 
-    return `import { Module, Snippet${todoImport}, type SnippetDefinition } from "hokit"
+    return `import { Module, Snippet, type SnippetDefinition } from "hokit"
 
 @Module({ preset: "${preset}" })
-export class ${language.className} {
-${todo}    @Snippet({
-        name: "${preset}",
-        prefix: "${language.acronym}",
-        body: ["$0"]
-    })
-    declare ${language.acronym}: SnippetDefinition
-}
+export class ${language.className} {}
 `
 }

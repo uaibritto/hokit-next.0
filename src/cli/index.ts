@@ -7,17 +7,56 @@ import { VERSION } from "@hokit/version"
 const command = process.argv[2]
 const args = process.argv.slice(3)
 const flags = new Set(args.filter((argument) => argument.startsWith("--")))
-
-function pickPresetFlag(knownFlags: string[]) {
-    return args
-        .filter((argument) => argument.startsWith("--"))
-        .find((argument) => !knownFlags.includes(argument))
-        ?.slice(2)
-}
+const positionals = args.filter((argument) => !argument.startsWith("--"))
 
 function rejectUnknownFlags(allowed: string[]) {
     const unknown = [...flags].filter((flag) => !allowed.includes(flag))
     if (unknown[0]) throw new Error(`Unknown flag "${unknown[0]}".`)
+}
+
+function pickSinglePresetFlag(knownFlags: string[]) {
+    const presetFlags = args.filter(
+        (argument) =>
+            argument.startsWith("--") && !knownFlags.includes(argument)
+    )
+
+    if (presetFlags.length > 1) {
+        throw new Error(`Unexpected flag "${presetFlags[1]}".`)
+    }
+
+    return presetFlags[0]?.slice(2)
+}
+
+function pickSinglePositional() {
+    if (positionals.length > 1) {
+        throw new Error(`Unexpected argument "${positionals[1]}".`)
+    }
+
+    return positionals[0]
+}
+
+function pickPresetAndPrefix(knownFlags: string[]) {
+    const presetFlag = pickSinglePresetFlag(knownFlags)
+
+    if (presetFlag) {
+        if (positionals.length > 1) {
+            throw new Error(`Unexpected argument "${positionals[1]}".`)
+        }
+
+        return {
+            prefix: positionals[0],
+            preset: presetFlag
+        }
+    }
+
+    if (positionals.length > 2) {
+        throw new Error(`Unexpected argument "${positionals[2]}".`)
+    }
+
+    return {
+        prefix: positionals[1],
+        preset: positionals[0]
+    }
 }
 
 try {
@@ -35,55 +74,65 @@ try {
                 break
 
             case "build":
-                rejectUnknownFlags(["--include-todos"])
+                rejectUnknownFlags(["--include-todo", "--include-todos"])
                 await Commands.build({
-                    includeTodos: flags.has("--include-todos")
+                    includeTodos:
+                        flags.has("--include-todo") ||
+                        flags.has("--include-todos")
                 })
 
                 break
 
             case "module":
-                rejectUnknownFlags([
-                    "--list",
-                    "--todo",
-                    ...args
-                        .filter((argument) => argument.startsWith("--"))
-                        .filter(
-                            (argument) =>
-                                !["--list", "--todo"].includes(argument)
+                if (flags.has("--list")) {
+                    rejectUnknownFlags(["--list"])
+                    if (pickSinglePositional()) {
+                        throw new Error(
+                            'Command "module --list" takes no preset.'
                         )
-                ])
-                await Commands.module(
-                    pickPresetFlag(["--list", "--todo"]) ??
-                        args.find((argument) => !argument.startsWith("--")),
-                    {
-                        list: flags.has("--list"),
-                        todo: flags.has("--todo")
                     }
-                )
+                }
+
+                {
+                    const presetFlag = pickSinglePresetFlag(["--list"])
+                    const preset = pickSinglePositional()
+
+                    if (presetFlag && preset) {
+                        throw new Error(
+                            "Choose either a preset flag or a positional preset."
+                        )
+                    }
+
+                    await Commands.module(presetFlag ?? preset, {
+                        list: flags.has("--list")
+                    })
+                }
 
                 break
 
             case "snippet":
-                rejectUnknownFlags([
-                    ...args.filter((argument) => argument.startsWith("--"))
-                ])
-                await Commands.snippet(
-                    pickPresetFlag([]),
-                    args.find((argument) => !argument.startsWith("--"))
-                )
+                {
+                    const parsed = pickPresetAndPrefix(["--list"])
+                    await Commands.snippet(parsed.preset, parsed.prefix, {
+                        list: flags.has("--list")
+                    })
+                }
+
+                break
+
+            case "todo":
+                {
+                    const parsed = pickPresetAndPrefix(["--list"])
+                    await Commands.todo(parsed.preset, parsed.prefix, {
+                        list: flags.has("--list")
+                    })
+                }
 
                 break
 
             case "doctor":
                 rejectUnknownFlags([])
                 await Commands.doctor()
-
-                break
-
-            case "docs":
-                rejectUnknownFlags([])
-                await Commands.docs()
 
                 break
 

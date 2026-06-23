@@ -1,8 +1,8 @@
-import { randomUUID } from "node:crypto"
-import { readFile, rename, rm, writeFile } from "node:fs/promises"
+import { readFile } from "node:fs/promises"
 import { resolve } from "node:path"
 
 import { ConfigError } from "@hokit/errors"
+import { writeAtomic } from "@hokit/filesystem/write-atomic"
 import type { PresetName } from "@hokit/types"
 import ts from "typescript"
 
@@ -101,15 +101,7 @@ export async function addPresetToConfig(
         const content = ts
             .createPrinter({ newLine: ts.NewLineKind.LineFeed })
             .printFile(result.transformed[0] as ts.SourceFile)
-        const temporary = `${path}.${randomUUID()}.tmp`
-
-        try {
-            await writeFile(temporary, content, { flag: "wx", mode: 0o600 })
-            await rename(temporary, path)
-        } catch (error) {
-            await rm(temporary, { force: true })
-            throw error
-        }
+        await writeAtomic(path, content)
     } finally {
         result.dispose()
     }

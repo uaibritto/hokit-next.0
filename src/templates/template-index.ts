@@ -13,6 +13,6 @@ export function emptyTemplateIndexTemplate(): string {
 }
 
 export function snippetBodyTemplate(name: string): string {
-    return `export const ${name} = []
+    return `export const ${name} = [""]
 `
 }

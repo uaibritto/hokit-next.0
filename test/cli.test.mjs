@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import { spawn } from "node:child_process"
 import {
+    access,
     mkdir,
     mkdtemp,
     readFile,
@@ -96,29 +97,8 @@ test("all CLI commands work in a real project", async () => {
         let result = await run(project, "init")
         assert.equal(result.code, 0, result.stderr)
         assert.match(result.stdout, /initialized/)
-        const initializedModule = await readFile(
-            join(project, "src/modules/tsx.ts"),
-            "utf8"
-        )
-        assert.match(initializedModule, /declare tsx: SnippetDefinition/)
-        assert.doesNotMatch(initializedModule, /@Todo/)
-        assert.equal(
-            await readFile(join(project, "src/templates/tsx/index.ts"), "utf8"),
-            "export const template = {}\n"
-        )
-
-        result = await run(project, "module", "--todo")
-        assert.equal(result.code, 0, result.stderr)
-        const moduleWithTodo = await readFile(
-            join(project, "src/modules/tsx.ts"),
-            "utf8"
-        )
-        assert.match(moduleWithTodo, /Snippet, Todo, type SnippetDefinition/)
-        assert.match(moduleWithTodo, /@Todo\("Future implementation"\)/)
-        assert.ok(
-            moduleWithTodo.indexOf("@Todo") < moduleWithTodo.indexOf("@Snippet")
-        )
-        assert.doesNotMatch(moduleWithTodo, /declare todo/)
+        await access(join(project, "src/modules"))
+        await access(join(project, "src/templates"))
         assert.match(
             await readFile(join(project, ".editorconfig"), "utf8"),
             /indent_size = 4/
@@ -126,12 +106,16 @@ test("all CLI commands work in a real project", async () => {
         assert.equal(
             JSON.parse(await readFile(join(project, "package.json"), "utf8"))
                 .name,
-            "hokit-project"
+            "my-snippets"
         )
         assert.equal(
             JSON.parse(await readFile(join(project, "package.json"), "utf8"))
                 .contributes.snippets[0].path,
-            "./dist/tsx.json"
+            ""
+        )
+        assert.match(
+            await readFile(join(project, "hokit.config.ts"), "utf8"),
+            /presets:\s*\[\]/
         )
         assert.equal(
             JSON.parse(await readFile(join(project, "tsconfig.json"), "utf8"))
@@ -148,7 +132,7 @@ test("all CLI commands work in a real project", async () => {
         const fakeBin = join(project, ".test-bin")
         await mkdir(fakeBin)
         await writeFile(
-            join(fakeBin, "npm"),
+            join(fakeBin, "bun"),
             '#!/bin/sh\ntouch "$PWD/.install-ran"\n',
             { mode: 0o755 }
         )
@@ -184,23 +168,21 @@ test("all CLI commands work in a real project", async () => {
         for (const preset of availablePresets) {
             assert.match(result.stdout, new RegExp(`^${preset}$`, "m"))
         }
+        result = await run(project, "module", "--list", "--unknown")
+        assert.equal(result.code, 1)
+        assert.match(result.stderr, /Unknown flag/)
+        result = await run(project, "module", "--list", "tsx")
+        assert.equal(result.code, 1)
+        assert.match(result.stderr, /takes no preset/)
 
         const configPath = join(project, "hokit.config.ts")
-        await writeFile(
-            configPath,
-            (await readFile(configPath, "utf8")).replace(
-                'presets: ["tsx"]',
-                "presets: []"
-            )
-        )
-        await rm(join(project, "src/modules/tsx.ts"))
 
         result = await run(project, "module", "--tsx")
         assert.equal(result.code, 0, result.stderr)
         assert.match(await readFile(configPath, "utf8"), /presets:\s*\["tsx"\]/)
         assert.match(
             await readFile(join(project, "src/modules/tsx.ts"), "utf8"),
-            /class TsxModule/
+            /export class TsxModule \{\}/
         )
         assert.equal(
             await readFile(join(project, "src/templates/tsx/index.ts"), "utf8"),
@@ -211,7 +193,7 @@ test("all CLI commands work in a real project", async () => {
         assert.equal(result.code, 0, result.stderr)
         assert.match(
             await readFile(join(project, "src/templates/tsx/rfc.ts"), "utf8"),
-            /export const rfc = \[\]/
+            /export const rfc = \[""\]/
         )
         assert.match(
             await readFile(join(project, "src/templates/tsx/index.ts"), "utf8"),
@@ -225,9 +207,43 @@ test("all CLI commands work in a real project", async () => {
             await readFile(join(project, "src/modules/tsx.ts"), "utf8"),
             /body: template\.rfc/
         )
+        assert.match(
+            await readFile(join(project, "src/modules/tsx.ts"), "utf8"),
+            /template: false/
+        )
         await writeFile(
             join(project, "src/templates/tsx/rfc.ts"),
             'export const rfc = ["$0"]\n'
+        )
+        await writeFile(
+            join(project, "src/modules/tsx.ts"),
+            (await readFile(join(project, "src/modules/tsx.ts"), "utf8"))
+                .replace('name: ""', 'name: "React Functional Component"')
+                .replace('description: ""', 'description: "Create a component"')
+        )
+        result = await run(project, "snippet", "--tsx", "bad-name")
+        assert.equal(result.code, 1)
+        assert.match(result.stderr, /Snippet prefix/)
+        await assert.rejects(
+            readFile(join(project, "src/templates/tsx/bad-name.ts"))
+        )
+        result = await run(project, "snippet", "--tsx", "rfc", "extra")
+        assert.equal(result.code, 1)
+        assert.match(result.stderr, /Unexpected argument/)
+        result = await run(project, "snippet", "tsx", "raf")
+        assert.equal(result.code, 0, result.stderr)
+        await writeFile(
+            join(project, "src/templates/tsx/raf.ts"),
+            'export const raf = ["$0"]\n'
+        )
+        await writeFile(
+            join(project, "src/modules/tsx.ts"),
+            (await readFile(join(project, "src/modules/tsx.ts"), "utf8"))
+                .replace('name: ""', 'name: "React Arrow Component"')
+                .replace(
+                    'description: ""',
+                    'description: "Create an arrow component"'
+                )
         )
 
         result = await run(project, "module", "--empty")
@@ -265,7 +281,7 @@ export class EmptyModule {
 
 @Module({ preset: "tsx" })
 export class TsxExtraModule {
-    @Snippet({ name: "Another TSX", prefix: "tsx", body: ["$0"] })
+    @Snippet({ name: "Another TSX", prefix: "rfc", body: ["$0"] })
     declare example: SnippetDefinition
 }
 `
@@ -279,19 +295,26 @@ export class TsxExtraModule {
             result = await run(project, "module", preset)
             assert.equal(result.code, 0, `${preset}: ${result.stderr}`)
         }
-        result = await run(project, "module", "javascript", "--todo")
+        result = await run(project, "todo", "javascript", "js")
         assert.equal(result.code, 0, result.stderr)
         assert.match(
             await readFile(join(project, "src/modules/javascript.ts"), "utf8"),
-            /@Todo\("Future implementation"\)/
+            /@Todo\(""\)/
+        )
+        await writeFile(
+            join(project, "src/templates/javascript/js.ts"),
+            'export const js = ["$0"]\n'
+        )
+        await writeFile(
+            join(project, "src/modules/javascript.ts"),
+            (await readFile(join(project, "src/modules/javascript.ts"), "utf8"))
+                .replace('name: ""', 'name: "javascript"')
+                .replace('description: ""', 'description: "javascript"')
         )
 
         result = await run(project, "lint")
         assert.equal(result.code, 0, result.stderr)
-        assert.match(
-            result.stderr,
-            /\[TODO\] javascript\.js: Future implementation/
-        )
+        assert.match(result.stderr, /\[TODO\] javascript\.js: /)
 
         result = await run(project, "lint", "--json")
         assert.equal(result.code, 0, result.stderr)
@@ -306,8 +329,8 @@ export class TsxExtraModule {
         await writeFile(
             configPath,
             (await readFile(configPath, "utf8")).replace(
-                'target: "vscode"',
-                'target: "vscode", customPresets: { astro: { output: "dist/astro.json", scopes: ["astro"] } }'
+                'docs: "off"',
+                'docs: "on", extend: { presets: { astro: { scopes: ["astro"] } } }'
             )
         )
         result = await run(project, "module", "--list")
@@ -326,74 +349,72 @@ export class TsxExtraModule {
         result = await run(project, "build")
         assert.equal(result.code, 0, result.stderr)
         const tsxOutput = JSON.parse(
-            await readFile(join(project, "dist/tsx.json"), "utf8")
+            await readFile(join(project, "dist/snippets/tsx.json"), "utf8")
         )
         const emptyOutput = JSON.parse(
-            await readFile(join(project, "dist/empty.json"), "utf8")
+            await readFile(join(project, "dist/snippets/empty.json"), "utf8")
         )
-        assert.ok(tsxOutput.tsx)
+        assert.ok(tsxOutput["React Functional Component"])
+        assert.ok(tsxOutput["React Arrow Component"])
         assert.ok(emptyOutput.Padded)
-        assert.equal(tsxOutput.tsx.scope, "typescriptreact")
-        assert.equal(tsxOutput.tsx.description, "tsx")
-        assert.equal(tsxOutput.tsx.isFileTemplate, false)
-        assert.equal(emptyOutput.Padded.isFileTemplate, true)
-        assert.ok(
-            JSON.parse(await readFile(join(project, "dist/astro.json"), "utf8"))
-                .astro
+        assert.equal(
+            tsxOutput["React Functional Component"].scope,
+            "typescriptreact"
         )
-        const expectedScopes = {
-            jsx: "javascriptreact",
-            swift: "swift",
-            kotlin: "kotlin",
-            python: "python",
-            php: "php",
-            ruby: "ruby",
-            rust: "rust",
-            zig: "zig",
-            c: "c",
-            cpp: "cpp",
-            javascript: "javascript"
-        }
+        assert.equal(
+            tsxOutput["React Functional Component"].description,
+            "Create a component"
+        )
+        assert.equal(
+            tsxOutput["React Functional Component"].isFileTemplate,
+            false
+        )
+        assert.equal(emptyOutput.Padded.isFileTemplate, true)
+        assert.deepEqual(
+            JSON.parse(
+                await readFile(
+                    join(project, "dist/snippets/astro.json"),
+                    "utf8"
+                )
+            ),
+            {}
+        )
         for (const preset of availablePresets.slice(1, -1)) {
-            const snippet = JSON.parse(
-                await readFile(join(project, `dist/${preset}.json`), "utf8")
-            )[preset]
+            const output = JSON.parse(
+                await readFile(
+                    join(project, `dist/snippets/${preset}.json`),
+                    "utf8"
+                )
+            )
 
             if (preset === "javascript") {
-                assert.equal(snippet, undefined)
+                assert.equal(output.javascript, undefined)
                 continue
             }
 
-            assert.ok(snippet)
-            assert.equal(
-                snippet.scope,
-                expectedScopes[preset],
-                `Unexpected scope for ${preset}`
-            )
+            assert.deepEqual(output, {})
         }
 
-        result = await run(project, "build", "--include-todos")
+        result = await run(project, "build", "--include-todo")
         assert.equal(result.code, 0, result.stderr)
         assert.ok(
             JSON.parse(
-                await readFile(join(project, "dist/javascript.json"), "utf8")
+                await readFile(
+                    join(project, "dist/snippets/javascript.json"),
+                    "utf8"
+                )
             ).javascript
         )
 
-        result = await run(project, "docs")
-        assert.equal(result.code, 0, result.stderr)
         const docsIndex = await readFile(
-            join(project, "docs/snippets/README.md"),
+            join(project, "docs/README.md"),
             "utf8"
         )
         assert.match(docsIndex, /typescriptreact\.md/)
         assert.match(docsIndex, /astro\.md/)
         assert.match(
-            await readFile(
-                join(project, "docs/snippets/javascript.md"),
-                "utf8"
-            ),
-            /Pending — Future implementation/
+            await readFile(join(project, "docs/javascript.md"), "utf8"),
+            /Pending —/
         )
 
         result = await run(project, "info")
@@ -402,7 +423,7 @@ export class TsxExtraModule {
 
         result = await run(project, "clean")
         assert.equal(result.code, 0, result.stderr)
-        await assert.rejects(readFile(join(project, "dist/tsx.json")))
+        await assert.rejects(readFile(join(project, "dist/snippets/tsx.json")))
 
         const watch = spawn(process.execPath, [cli, "watch"], {
             cwd: project,
@@ -416,15 +437,15 @@ export class TsxExtraModule {
             const rebuilt = waitForOutput(watch, "Changes detected.")
             await writeFile(
                 sourcePath,
-                source.replace('prefix: "tsx"', 'prefix: "tsx2"')
+                source.replace('prefix: "rfc"', 'prefix: "rfc2"')
             )
             await rebuilt
             await new Promise((resolveDelay) => setTimeout(resolveDelay, 300))
             const watchedOutput = await readFile(
-                join(project, "dist/tsx.json"),
+                join(project, "dist/snippets/tsx.json"),
                 "utf8"
             )
-            assert.match(watchedOutput, /tsx2/)
+            assert.match(watchedOutput, /rfc2/)
         } finally {
             watch.kill("SIGTERM")
         }
@@ -463,8 +484,8 @@ export class OrphanModule {
         await rm(orphanTodo)
 
         const unsafeConfig = (await readFile(configPath, "utf8")).replace(
-            'target: "vscode"',
-            'target: "vscode", overrides: { tsx: { output: "src/modules/tsx.ts" } }'
+            'output: "dist/snippets"',
+            'output: "src/modules"'
         )
         await writeFile(configPath, unsafeConfig)
         result = await run(project, "doctor")
@@ -475,6 +496,29 @@ export class OrphanModule {
             await readFile(join(project, "src/modules/tsx.ts"), "utf8"),
             /TsxModule/
         )
+
+        await writeFile(
+            configPath,
+            `import { defineConfig } from "hokit"
+
+export default defineConfig({
+    cwd: "src/modules",
+    output: "dist/snippets",
+    presets: [],
+    extend: {
+        presets: {
+        "../evil": {
+            scopes: ["evil"]
+        }
+        }
+    }
+})
+`
+        )
+        result = await run(project, "module", "../evil")
+        assert.equal(result.code, 1)
+        assert.match(result.stderr, /Preset/)
+        await assert.rejects(readFile(join(project, "src/evil.ts")))
     } finally {
         await rm(project, { recursive: true, force: true })
     }

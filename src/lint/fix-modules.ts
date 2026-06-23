@@ -1,5 +1,6 @@
-import { readFile, writeFile } from "node:fs/promises"
+import { readFile } from "node:fs/promises"
 
+import { writeAtomic } from "@hokit/filesystem/write-atomic"
 import ts from "typescript"
 
 function fixSnippetObject(
@@ -103,7 +104,7 @@ export async function fixModuleFile(path: string) {
             const output = ts
                 .createPrinter({ newLine: ts.NewLineKind.LineFeed })
                 .printFile(result.transformed[0] as ts.SourceFile)
-            await writeFile(path, output, { mode: 0o644 })
+            await writeAtomic(path, output)
         }
     } finally {
         result.dispose()

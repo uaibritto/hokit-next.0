@@ -3,8 +3,9 @@ export function hokitConfigTemplate() {
 
 export default defineConfig({
     cwd: "src/modules",
-    presets: ["tsx"],
-    target: "vscode"
+    output: "dist/snippets",
+    presets: [],
+    docs: "off"
 })
 `
 }

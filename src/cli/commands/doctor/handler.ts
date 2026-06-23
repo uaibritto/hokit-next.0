@@ -1,4 +1,5 @@
 import { access } from "node:fs/promises"
+import { join } from "node:path"
 
 import { loadConfig } from "@hokit/config/load-config"
 import { resolvePresets } from "@hokit/config/resolve-presets"
@@ -27,7 +28,9 @@ export async function doctorHandler() {
     let config: Awaited<ReturnType<typeof loadConfig>> | undefined
 
     try {
-        config = await loadConfig()
+        config = await loadConfig(undefined, {
+            allowEmptyPresets: true
+        })
         const presets = resolvePresets(config)
         checks.push([
             "Modules directory",
@@ -46,7 +49,7 @@ export async function doctorHandler() {
                     void resolveOutputPath(
                         process.cwd(),
                         config!.cwd,
-                        preset.output
+                        join(config!.output, `${name}.json`)
                     )
             ])
         }

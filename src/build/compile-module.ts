@@ -5,6 +5,7 @@ import { validateSnippets } from "@hokit/validator"
 export function compileModule(
     module: ScannedModule,
     preset: PresetConfig,
+    output: string,
     options: { includeTodos?: boolean } = {}
 ): CompiledModule {
     const snippetProperties = new Set(
@@ -54,7 +55,7 @@ export function compileModule(
     const transformed = preset.transform ? preset.transform(configs) : configs
 
     return {
-        output: preset.output,
+        output,
         scopes: preset.scopes,
         snippets: transformed
     }

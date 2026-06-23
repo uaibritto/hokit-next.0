@@ -3,21 +3,18 @@ import { join } from "node:path"
 
 import { addPresetToConfig } from "@hokit/config/add-preset-to-config"
 import { loadConfig } from "@hokit/config/load-config"
+import { availablePresetNames } from "@hokit/config/resolve-presets"
 import { resolveProjectPath } from "@hokit/filesystem/resolve-project-path"
+import { writeAtomic } from "@hokit/filesystem/write-atomic"
 import { logger } from "@hokit/logger"
-import { Presets } from "@hokit/presets/registry"
 import {
     emptyTemplateIndexTemplate,
+    moduleTemplate,
     snippetBodyTemplate
 } from "@hokit/templates"
 import type { PresetName } from "@hokit/types"
 
-function assertIdentifier(value: string, label: string) {
-    if (/^[A-Za-z_$][\w$]*$/.test(value)) return
-    throw new Error(
-        `${label} "${value}" must be a valid TypeScript identifier.`
-    )
-}
+import { assertPresetCliName, assertSnippetCliName } from "../shared/names"
 
 async function exists(path: string) {
     try {
@@ -51,21 +48,54 @@ function addTemplateImport(source: string, preset: string) {
     return `${source.slice(0, end)}\n${importLine}\n${source.slice(end)}`
 }
 
-function addSnippetToModule(source: string, preset: string, prefix: string) {
+function addTodoImport(source: string) {
+    if (source.includes(" Todo,") || source.includes(", Todo")) return source
+
+    return source.replace(
+        /import \{ ([^}]+) \} from "hokit"/,
+        (statement, imports: string) => {
+            const parts = imports.split(",").map((part) => part.trim())
+            const firstType = parts.findIndex((part) =>
+                part.startsWith("type ")
+            )
+            const next =
+                firstType === -1
+                    ? [...parts, "Todo"]
+                    : [
+                          ...parts.slice(0, firstType),
+                          "Todo",
+                          ...parts.slice(firstType)
+                      ]
+
+            return `import { ${next.join(", ")} } from "hokit"`
+        }
+    )
+}
+
+function addSnippetToModule(
+    source: string,
+    preset: string,
+    prefix: string,
+    options: { todo?: boolean } = {}
+) {
     if (new RegExp(`declare\\s+${prefix}\\s*:`).test(source)) {
         throw new Error(`Snippet "${prefix}" already exists in ${preset}.ts.`)
     }
 
-    const next = addTemplateImport(source, preset)
-    const snippet = `    @Snippet({
-        name: "${prefix}",
+    const next = options.todo
+        ? addTodoImport(addTemplateImport(source, preset))
+        : addTemplateImport(source, preset)
+    const todo = options.todo ? `    @Todo("")\n` : ""
+    const snippet = `${todo}    @Snippet({
+        name: "",
         prefix: "${prefix}",
         body: template.${prefix},
-        template: true
+        description: "",
+        template: false
     })
     declare ${prefix}: SnippetDefinition
 `
-    const index = next.lastIndexOf("\n}")
+    const index = next.lastIndexOf("}")
     if (index === -1) throw new Error(`Could not update module "${preset}".`)
 
     return `${next.slice(0, index)}\n${snippet}${next.slice(index)}`
@@ -91,22 +121,33 @@ function addSnippetToTemplateIndex(source: string, prefix: string) {
     return next.endsWith("\n") ? next : `${next}\n`
 }
 
-export async function snippetHandler(presetName?: string, prefix?: string) {
+export interface SnippetOptions {
+    todo?: boolean
+    list?: boolean
+}
+
+export async function snippetHandler(
+    presetName?: string,
+    prefix?: string,
+    options: SnippetOptions = {}
+) {
+    const config = await loadConfig(process.cwd(), {
+        allowEmptyPresets: true
+    })
+    const names = availablePresetNames(config) as PresetName[]
+
+    if (options.list) {
+        console.log(names.join("\n"))
+        return
+    }
+
     if (!presetName) {
         throw new Error('Use "hokit snippet --<preset> <prefix>".')
     }
     if (!prefix) throw new Error("Snippet prefix is required.")
 
-    assertIdentifier(presetName, "Preset")
-    assertIdentifier(prefix, "Prefix")
-
-    const config = await loadConfig(process.cwd(), {
-        allowEmptyPresets: true
-    })
-    const names: PresetName[] = [
-        ...Object.keys(Presets),
-        ...Object.keys(config.customPresets ?? {})
-    ]
+    assertPresetCliName(presetName)
+    assertSnippetCliName(prefix)
 
     if (!names.includes(presetName)) {
         throw new Error(
@@ -131,25 +172,22 @@ export async function snippetHandler(presetName?: string, prefix?: string) {
     const templateIndexPath = join(templateDirectory, "index.ts")
     const snippetTemplatePath = join(templateDirectory, `${prefix}.ts`)
 
-    if (!(await exists(modulePath))) {
-        throw new Error(
-            `Module "${presetName}.ts" was not found. Run "hokit module --${presetName}" first.`
-        )
-    }
-
-    await mkdir(templateDirectory, { recursive: true })
-    await createFileIfMissing(templateIndexPath, emptyTemplateIndexTemplate())
-    await createFileIfMissing(snippetTemplatePath, snippetBodyTemplate(prefix))
-
-    const index = await readFile(templateIndexPath, "utf8")
-    await writeFile(templateIndexPath, addSnippetToTemplateIndex(index, prefix))
+    await mkdir(modulesDirectory, { recursive: true })
+    await createFileIfMissing(modulePath, moduleTemplate(presetName))
 
     const module = await readFile(modulePath, "utf8")
-    await writeFile(
-        modulePath,
-        addSnippetToModule(module, presetName, prefix),
-        { mode: 0o644 }
-    )
+    const nextModule = addSnippetToModule(module, presetName, prefix, options)
+    const index = (await exists(templateIndexPath))
+        ? await readFile(templateIndexPath, "utf8")
+        : emptyTemplateIndexTemplate()
+    const nextIndex = addSnippetToTemplateIndex(index, prefix)
 
-    logger.success(`Created snippet "${prefix}" for preset "${presetName}".`)
+    await mkdir(templateDirectory, { recursive: true })
+    await createFileIfMissing(snippetTemplatePath, snippetBodyTemplate(prefix))
+    await writeAtomic(templateIndexPath, nextIndex)
+    await writeAtomic(modulePath, nextModule)
+
+    logger.success(
+        `Created ${options.todo ? "todo" : "snippet"} "${prefix}" for preset "${presetName}".`
+    )
 }

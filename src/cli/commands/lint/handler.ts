@@ -74,7 +74,7 @@ async function inspect() {
 
     const todos = modules.flatMap((module) =>
         module.snippets.flatMap((snippet) =>
-            snippet.todo
+            snippet.todo !== undefined
                 ? [
                       {
                           field: String(snippet.propertyKey),

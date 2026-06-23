@@ -9,14 +9,14 @@
 
 ## Quick start
 
-A quick start guide for the most common use cases.
-
 ```sh
 npx hokit init
+npx hokit module --tsx
+npx hokit snippet --tsx rfc
 npx hokit build
 ```
 
-The `init` command initializes a pre-configured project with well-defined defaults;
+`hokit init` creates a snippet-extension project with TypeScript, editor settings, formatting config, and empty module/template directories.
 
 ## Suggested Structure
 
@@ -24,10 +24,7 @@ The `init` command initializes a pre-configured project with well-defined defaul
 .vscode/settings.json
 src/
 ├── modules/
-│   └── tsx.ts
 └── templates/
-    └── tsx/
-        └── index.ts
 .editorconfig
 .gitignore
 .oxfmtrc.json
@@ -36,64 +33,90 @@ package.json
 tsconfig.json
 ```
 
-- Editor settings compatible with `oxfmt`;
-- Formatting preferences;
-- Build settings;
-- Dependency installation;
-
 ## Configuration
 
-Configuration is done through a `hokit.config.ts` file.
+Configuration is done through `hokit.config.ts`.
 
 ```ts
 import { defineConfig } from "hokit"
 
 export default defineConfig({
     cwd: "src/modules",
+    output: "dist/snippets",
     presets: ["tsx"],
-    customPresets: {
-        astro: {
-            output: "dist/astro.json",
-            scopes: ["astro"]
+    extend: {
+        presets: {
+            astro: {
+                scopes: ["astro"],
+                tags: ["web", "astro"],
+                transform: (snippets) =>
+                    snippets.filter((snippet) => snippet.template === false)
+            }
         }
     },
-    target: "vscode",
-    overrides: {
-        tsx: {
-            output: "dist/tsx.json"
-        }
-    }
+    docs: "off"
 })
 ```
 
-| Option          | Description                                      | Standard             |
-| --------------- | ------------------------------------------------ | -------------------- |
-| `cwd`           | Directory containing the modules                 | required             |
-| `presets`       | Enabled presets                                  | required             |
-| `target`        | Output format `vscode`                           | `vscode`             |
-| `customPresets` | User-defined presets                             | `{}`                 |
-| `overrides`     | Output substitutions, scopes, and transformation | preset configuration |
-| `docs`          | Documentation output and title                   | `docs/snippets`      |
+| Option           | Description                                        | Default  |
+| ---------------- | -------------------------------------------------- | -------- |
+| `cwd`            | Directory containing snippet modules               | required |
+| `output`         | Directory where snippet JSON files are generated   | `dist`   |
+| `presets`        | Enabled presets                                    | required |
+| `extend.presets` | Adds custom presets or customizes built-in presets | `{}`     |
+| `docs`           | Automatic Markdown documentation during build      | `"off"`  |
 
-`docs` is only used by `hokit docs`. It does not affect `build`, `lint`, or `doctor`.
+Output files are generated as `[output]/[preset].json`. For example, preset `tsx` with `output: "dist/snippets"` generates `dist/snippets/tsx.json`.
+
+### Extending presets
+
+`extend.presets` replaces the older `customPresets`/`overrides` model. If the preset exists, Hokit merges the extension with the built-in preset. If the preset does not exist, the extension defines a custom preset.
 
 ```ts
 export default defineConfig({
     cwd: "src/modules",
-    presets: ["tsx"],
-    target: "vscode",
-    docs: {
-        output: "docs/snippets",
-        title: "Project snippets"
+    output: "dist/snippets",
+    presets: ["tsx", "astro"],
+    extend: {
+        presets: {
+            tsx: {
+                tags: ["react"]
+            },
+            astro: {
+                scopes: ["astro"]
+            }
+        }
     }
 })
 ```
 
-When `docs` is omitted, Hokit writes documentation to `docs/snippets` with the title `Hokit Snippets`.
+### Documentation
 
-#### Presets
+Documentation is generated automatically during `hokit build` when enabled.
 
-Available presets:
+```ts
+export default defineConfig({
+    cwd: "src/modules",
+    output: "dist/snippets",
+    presets: ["tsx"],
+    docs: "on"
+})
+```
+
+`docs: "on"` writes Markdown files to `docs`. To customize the output directory:
+
+```ts
+docs: {
+    enabled: "on",
+    output: "docs/snippets"
+}
+```
+
+Pending snippets are included in the generated documentation with their status.
+
+## Presets
+
+Built-in presets:
 
 - `tsx`
 - `jsx`
@@ -107,61 +130,63 @@ Available presets:
 - `c`
 - `cpp`
 - `javascript`
-- `empty`.
+- `empty`
 
-Each language preset generates `dist/<language>.json`; `overrides` allows you to change output, scopes, or transformation individually.
+Each preset generates one file using the global `output` directory.
 
-## Modules and Snippets
+## Modules and snippets
 
 ```ts
 import { Module, Snippet, Todo, type SnippetDefinition } from "hokit"
+
+import { template } from "@/templates/tsx"
 
 @Module({ preset: "tsx" })
 export class TsxModule {
     @Snippet({
         name: "React Functional Component",
         prefix: "rfc",
-        body: [
-            'import type { JSX } from "react"',
-            "",
-            "export default function ${TM_FILENAME_BASE/(.*)/${1:/capitalize}/}(): JSX.Element {",
-            "    return (",
-            "        $1",
-            "    )",
-            "}"
-        ],
-        description: "Creates a React functional component",
-        template: true
+        body: template.rfc,
+        description: "Create a React Functional Component",
+        template: false
     })
-    declare tsx: SnippetDefinition
+    declare rfc: SnippetDefinition
 
-    @Todo("Waiting for the next Zustand release")
+    @Todo("Waiting for a future framework release")
     @Snippet({
-        name: "Zustand store",
-        prefix: "zustand",
-        body: ["$0"]
+        name: "React Arrow Component",
+        prefix: "raf",
+        body: template.raf,
+        description: "Create a React Arrow Component",
+        template: false
     })
-    declare useStore: SnippetDefinition
+    declare raf: SnippetDefinition
 }
 ```
 
-Modules that use the same preset are aggregated into the same file. Names and prefixes must be unique within the preset.
+Modules that use the same preset are aggregated into the same output file. Names and prefixes must be unique within each preset.
 
-In the VS Code output, each snippet receives the `scope` of the preset. When `description` is not provided, the name of the snippet is used; `template` is converted to `isFileTemplate` and defaults to `false`.
+For VS Code/Cursor snippets, Hokit injects the preset scope into each snippet. When `description` is omitted, the snippet name is used. `template` is converted to `isFileTemplate` and defaults to `false`.
 
 ### Decorators
 
-- `@Module`: Defines a module and the preset to be used.
-- `@Snippet`: Define the snippet properties.
-- `@Todo`: Marks a real `@Snippet` as pending. Pending snippets appear as lint
-  warnings and are ignored by the build. Using `@Todo` without `@Snippet` is an
-  error.
+- `@Module`: defines the preset used by the class.
+- `@Snippet`: defines a snippet that can be built.
+- `@Todo`: marks a real snippet as pending. Pending snippets are ignored by the regular build, reported by lint, and included in docs.
+
+Using `@Todo` without `@Snippet` is an error.
 
 ## CLI
 
 ### `hokit init`
 
-Initializes a project with configuration, TypeScript, and a sample TSX module.
+Initializes a new project and installs dependencies using the first available package manager in this order:
+
+1. `bun`
+2. `nub`
+3. `pnpm`
+4. `npm`
+5. `yarn`
 
 Existing files are preserved.
 
@@ -171,60 +196,67 @@ hokit init
 
 ### `hokit build`
 
-Loads TypeScript modules, validates snippets, and saves preset files.
-
-Writing is atomic: an error will not leave a partially generated file.
+Loads modules, validates snippets, writes JSON files, and optionally generates docs.
 
 ```sh
 hokit build
-hokit build --include-todos
+hokit build --include-todo
 ```
+
+`--include-todo` includes pending snippets in a preview build.
 
 ### `hokit module --[preset]`
 
-Creates a module for a preset and its template directory. If necessary, automatically enables the preset in `hokit.config.ts`.
+Creates or updates the module and template index for a preset, and enables the preset in `hokit.config.ts`.
 
-It creates:
+```sh
+hokit module --tsx
+hokit module tsx
+hokit module --list
+```
+
+It creates or preserves:
 
 - `src/modules/<preset>.ts`
 - `src/templates/<preset>/index.ts`
 
-It does not overwrite existing modules. Templates do not include `@Todo`; use `--todo` to mark the last snippet as pending. Without specifying a preset, the first one in the configuration is used.
-
-```sh
-hokit module --tsx
-hokit module --tsx --todo
-hokit module --todo
-hokit module --list
-```
-
-The positional format still works for compatibility:
-
-```sh
-hokit module tsx
-```
+Preset names used through the CLI must start with a letter and may contain only letters, numbers, hyphens, and underscores.
 
 ### `hokit snippet --[preset] [prefix]`
 
-Adds a new snippet to the end of the module that owns the selected preset.
+Creates or updates a snippet module, template index, and body file.
 
 ```sh
 hokit snippet --tsx rfc
+hokit snippet tsx rfc
+hokit snippet --list
+hokit snippet --tsx --list
 ```
 
-This command creates or updates:
+It creates or updates:
 
-- `src/templates/tsx/rfc.ts`
-- `src/templates/tsx/index.ts`
 - `src/modules/tsx.ts`
+- `src/templates/tsx/index.ts`
+- `src/templates/tsx/rfc.ts`
 
-The module receives the template import and the snippet body points to `template.rfc`.
+Generated snippet fields start as placeholders so the developer can fill name, description, and body intentionally.
 
-### `hokit lint [--fix]`
+Snippet prefixes used through the CLI must start with a letter and may contain only letters, numbers, and underscores.
 
-Executes the `required`, `min`, and `unique` rules on all modules.
+### `hokit todo --[preset] [prefix]`
 
-The `--fix` option safely corrects outer spaces in text and adds `$0` to an empty `body`. Ambiguous issues, such as duplicate names, continue to be reported for manual correction.
+Creates the same files as `hokit snippet`, but marks the generated snippet as pending.
+
+```sh
+hokit todo --tsx raf
+hokit todo tsx raf
+hokit todo --list
+hokit todo --tsx --list
+```
+
+### `hokit lint`
+
+Runs validation rules.
 
 ```sh
 hokit lint
@@ -232,18 +264,11 @@ hokit lint --fix
 hokit lint --json
 ```
 
-### `hokit docs`
-
-Generates a Markdown summary and one page per scope. Pending snippets remain in
-the documentation with their status and source location.
-
-```sh
-hokit docs
-```
+`--fix` safely trims simple text fields and fixes empty inline `body: []` definitions.
 
 ### `hokit doctor`
 
-Check the Node.js version, configuration, module directory, presets, and ensure all output paths are safe.
+Checks Node.js, configuration, module directory, presets, and output path safety.
 
 ```sh
 hokit doctor
@@ -251,7 +276,7 @@ hokit doctor
 
 ### `hokit clean`
 
-Remove only the output files specified by the presets, always within the project directory.
+Removes generated snippet JSON files for enabled presets.
 
 ```sh
 hokit clean
@@ -259,7 +284,7 @@ hokit clean
 
 ### `hokit info`
 
-Displays the Hokit version, project directory, target, and active presets.
+Displays the Hokit version, project directory, output directory, and active presets.
 
 ```sh
 hokit info
@@ -267,7 +292,7 @@ hokit info
 
 ### `hokit watch`
 
-Perform an initial build and recompile when a node changes. Quick changes are queued to prevent concurrent builds.
+Runs an initial build and rebuilds when source files change.
 
 ```sh
 hokit watch
@@ -275,24 +300,16 @@ hokit watch
 
 ### `hokit help`
 
-Displays a summary reference of the commands.
-
 ```sh
 hokit help
 hokit --help
 hokit --version
 ```
 
-## Personalized validation
+## Validator decorators
 
-Validation decorators are also available via the public subpath:
+Validation decorators are available through the public subpath:
 
 ```ts
 import { Min, Required, Unique } from "hokit/validator"
 ```
-
-## Documentation
-
-`hokit docs` generates project documentation in `docs/snippets` by default. This folder is intended to be committed when you want your snippet extension documented on GitHub.
-
-Internal study notes for Hokit maintainers should stay outside the package published to npm.

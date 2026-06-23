@@ -1,45 +1,32 @@
 export function packageJsonTemplate(): string {
     return `${JSON.stringify(
         {
-            name: "hokit-project",
-            displayName: "Hokit Project",
+            name: "my-snippets",
+            displayName: "",
             version: "1.0.0",
-            publisher: "publisher",
-            description: "A snippet extension generated with Hokit.",
-            type: "module",
-            icon: "icon.png",
+            description: "",
+            categories: ["Snippets"],
+            keywords: ["snippets"],
+            homepage: "https://github.com/user/repo",
+            bugs: {
+                url: "https://github.com/user/repo/issues"
+            },
             license: "MIT",
             maintainers: ["Name <email>"],
-            homepage: "https://github.com/user/repo",
             repository: {
                 type: "git",
                 url: "https://github.com/user/repo.git"
             },
-            bugs: {
-                url: "https://github.com/user/repo/issues"
-            },
-            engines: {
-                vscode: "^1.60.0"
-            },
-            categories: ["Snippets"],
-            contributes: {
-                snippets: [
-                    {
-                        language: "typescriptreact",
-                        path: "./dist/tsx.json"
-                    }
-                ]
-            },
-            keywords: ["snippets"],
+            publisher: "publisher",
+            type: "module",
             scripts: {
                 build: "hokit build",
                 lint: "hokit lint",
-                doctor: "hokit doctor",
                 watch: "hokit watch",
                 fmt: "oxfmt",
-                package: "vsce package --out ./bin/hokit-project.vsix",
-                "vscode:pub": "vsce publish ./bin/hokit-project.vsix",
-                "cursor:pub": "ovsx publish ./bin/hokit-project.vsix"
+                package: "vsce package --out <out>",
+                "vscode:pub": "vsce publish <.vsix>",
+                "cursor:pub": "ovsx publish <.vsix>"
             },
             dependencies: {
                 hokit: "latest"
@@ -49,6 +36,18 @@ export function packageJsonTemplate(): string {
                 ovsx: "latest",
                 oxfmt: "latest",
                 typescript: "latest"
+            },
+            contributes: {
+                snippets: [
+                    {
+                        language: "",
+                        path: ""
+                    }
+                ]
+            },
+            icon: "icon.png",
+            engines: {
+                vscode: "^1.60.0"
             }
         },
         null,

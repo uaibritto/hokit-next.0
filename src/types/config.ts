@@ -1,14 +1,20 @@
-import type { PresetName, Target } from "./core"
+import type { PresetName } from "./core"
 import type { PresetConfig } from "./preset"
+
+export type DocsConfig =
+    | "on"
+    | "off"
+    | {
+          enabled?: "on" | "off"
+          output?: string
+      }
 
 export interface BuildConfig {
     cwd: string
+    output: string
     presets: PresetName[]
-    customPresets?: Record<string, PresetConfig>
-    overrides?: Partial<Record<PresetName, Partial<PresetConfig>>>
-    docs?: {
-        output?: string
-        title?: string
+    extend?: {
+        presets?: Record<string, Partial<PresetConfig>>
     }
-    target?: Target
+    docs?: DocsConfig
 }

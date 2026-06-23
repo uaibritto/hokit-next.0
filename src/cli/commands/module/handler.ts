@@ -1,19 +1,18 @@
 import { mkdir, writeFile } from "node:fs/promises"
-import { basename, join } from "node:path"
+import { join } from "node:path"
 
 import { addPresetToConfig } from "@hokit/config/add-preset-to-config"
 import { loadConfig } from "@hokit/config/load-config"
+import { availablePresetNames } from "@hokit/config/resolve-presets"
 import { resolveProjectPath } from "@hokit/filesystem/resolve-project-path"
 import { logger } from "@hokit/logger"
-import { Presets } from "@hokit/presets/registry"
 import { emptyTemplateIndexTemplate, moduleTemplate } from "@hokit/templates"
 import type { PresetName } from "@hokit/types"
 
-import { addTodoToModule } from "./add-todo-to-module"
+import { assertPresetCliName } from "../shared/names"
 
 export interface ModuleOptions {
     list?: boolean
-    todo?: boolean
 }
 
 export async function moduleHandler(
@@ -23,15 +22,9 @@ export async function moduleHandler(
     const config = await loadConfig(process.cwd(), {
         allowEmptyPresets: true
     })
-    const names: PresetName[] = [
-        ...Object.keys(Presets),
-        ...Object.keys(config.customPresets ?? {})
-    ]
+    const names = availablePresetNames(config) as PresetName[]
 
     if (options.list) {
-        if (options.todo) {
-            throw new Error('Flags "--list" and "--todo" cannot be combined.')
-        }
         console.log(names.join("\n"))
         return
     }
@@ -47,6 +40,8 @@ export async function moduleHandler(
             `Unknown preset "${selected}". Available presets: ${names.join(", ")}.`
         )
     }
+
+    assertPresetCliName(selected)
 
     if (!config.presets.includes(selected)) {
         await addPresetToConfig(selected)
@@ -64,9 +59,7 @@ export async function moduleHandler(
         { allowRoot: true }
     )
     const templateFile = join(templateDirectory, "index.ts")
-    const template = moduleTemplate(selected, {
-        todo: options.todo ?? false
-    })
+    const template = moduleTemplate(selected)
 
     await mkdir(directory, { recursive: true })
     await mkdir(templateDirectory, { recursive: true })
@@ -82,17 +75,9 @@ export async function moduleHandler(
 
     try {
         await writeFile(file, template, { flag: "wx", mode: 0o644 })
+        logger.success(`Created ${file}.`)
     } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === "EEXIST") {
-            if (options.todo) {
-                await addTodoToModule(file)
-                logger.success(`Added Todo to ${file}.`)
-                return
-            }
-            throw new Error(`Module "${basename(file)}" already exists.`)
-        }
-        throw error
+        if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error
+        logger.success(`Updated ${file}.`)
     }
-
-    logger.success(`Created ${file}.`)
 }
