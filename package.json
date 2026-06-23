@@ -1,6 +1,6 @@
 {
     "name": "hokit",
-    "version": "4.0.0",
+    "version": "4.0.1",
     "description": "A declarative snippet compiler based on decorators.",
     "keywords": [
         "cursor",
@@ -22,6 +22,7 @@
         "hokit": "./dist/cli/index.js"
     },
     "files": [
+        "assets",
         "dist"
     ],
     "type": "module",

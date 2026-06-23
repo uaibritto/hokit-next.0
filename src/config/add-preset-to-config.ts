@@ -101,6 +101,7 @@ export async function addPresetToConfig(
         const content = ts
             .createPrinter({ newLine: ts.NewLineKind.LineFeed })
             .printFile(result.transformed[0] as ts.SourceFile)
+            .replace(/((?:import [^\n]+\n)+)\n*(export default)/, "$1\n$2")
         await writeAtomic(path, content)
     } finally {
         result.dispose()

@@ -1,6 +1,8 @@
 <div align="center">
     <img src="https://xgjzloifyvgpbmyonaya.supabase.co/storage/v1/object/public/files/CLkIt_6NNL/original" alt="Logo" width="200" />
     <br />
+    <img src="./assets/hokit-mascot.svg" alt="Hokit bird mascot" width="180" />
+    <br />
     <h1>Hokit</h1>
     <p>A declarative snippet compiler based on decorators.</p>
 </div>

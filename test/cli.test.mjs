@@ -117,6 +117,10 @@ test("all CLI commands work in a real project", async () => {
             await readFile(join(project, "hokit.config.ts"), "utf8"),
             /presets:\s*\[\]/
         )
+        assert.match(
+            await readFile(join(project, "hokit.config.ts"), "utf8"),
+            /from "hokit"\n\nexport default defineConfig/
+        )
         assert.equal(
             JSON.parse(await readFile(join(project, "tsconfig.json"), "utf8"))
                 .compilerOptions.moduleResolution,
@@ -187,6 +191,10 @@ test("all CLI commands work in a real project", async () => {
         assert.equal(result.code, 0, result.stderr)
         assert.match(await readFile(configPath, "utf8"), /presets:\s*\["tsx"\]/)
         assert.match(
+            await readFile(configPath, "utf8"),
+            /from "hokit";?\n\nexport default defineConfig/
+        )
+        assert.match(
             await readFile(join(project, "src/modules/tsx.ts"), "utf8"),
             /export class TsxModule \{\}/
         )
@@ -203,7 +211,7 @@ test("all CLI commands work in a real project", async () => {
         )
         assert.match(
             await readFile(join(project, "src/templates/tsx/index.ts"), "utf8"),
-            /import \{ rfc \} from "\.\/rfc"/
+            /import \{ rfc \} from "\.\/rfc"\n\nexport const template/
         )
         assert.match(
             await readFile(join(project, "src/templates/tsx/index.ts"), "utf8"),

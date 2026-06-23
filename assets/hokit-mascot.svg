@@ -1,0 +1,13 @@
+<svg width="320" height="240" viewBox="0 0 320 240" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+    <title id="title">Hokit bird mascot</title>
+    <desc id="desc">A friendly geometric bird mascot using green, orange, and white.</desc>
+    <rect width="320" height="240" rx="42" fill="#0F2F24" />
+    <path d="M74 146C94 82 151 55 217 77C183 86 160 108 148 139C133 176 98 169 74 146Z" fill="#21C778" />
+    <path d="M128 151C148 94 198 68 256 84C226 98 204 123 194 154C181 194 148 185 128 151Z" fill="#FF8A24" />
+    <path d="M98 142C116 100 154 80 199 92C174 106 158 128 150 156C141 185 116 173 98 142Z" fill="white" />
+    <path d="M203 91L269 74L232 122L203 91Z" fill="#FF8A24" />
+    <circle cx="197" cy="99" r="7" fill="#0F2F24" />
+    <path d="M116 172C133 192 174 194 198 174" stroke="#21C778" stroke-width="9" stroke-linecap="round" />
+    <path d="M136 187L124 209" stroke="#FF8A24" stroke-width="8" stroke-linecap="round" />
+    <path d="M172 189L166 213" stroke="#FF8A24" stroke-width="8" stroke-linecap="round" />
+</svg>

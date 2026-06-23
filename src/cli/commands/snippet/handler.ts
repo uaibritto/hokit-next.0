@@ -103,7 +103,9 @@ function addSnippetToModule(
 
 function addSnippetToTemplateIndex(source: string, prefix: string) {
     const importLine = `import { ${prefix} } from "./${prefix}"`
-    let next = source.includes(importLine) ? source : `${importLine}\n${source}`
+    let next = source.includes(importLine)
+        ? source
+        : `${importLine}\n\n${source}`
 
     const object = next.match(/export const template = \{([\s\S]*?)\}/m)
     if (!object?.index && object?.index !== 0) {
@@ -118,6 +120,10 @@ function addSnippetToTemplateIndex(source: string, prefix: string) {
     const entry = content ? `,\n    ${prefix}\n` : `\n    ${prefix}\n`
 
     next = `${next.slice(0, insertAt)}${entry}${next.slice(insertAt)}`
+    next = next.replace(
+        /((?:import [^\n]+\n)+)\n*(export const template)/,
+        "$1\n$2"
+    )
     return next.endsWith("\n") ? next : `${next}\n`
 }
 
