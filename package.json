@@ -1,6 +1,6 @@
 {
     "name": "hokit",
-    "version": "4.0.2",
+    "version": "4.0.3",
     "description": "A declarative snippet compiler based on decorators.",
     "keywords": [
         "cursor",

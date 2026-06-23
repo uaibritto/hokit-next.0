@@ -1,3 +1,12 @@
+import { VERSION } from "@hokit/version"
+
+const DevDependencyVersions = {
+    "@vscode/vsce": "^3.9.2",
+    ovsx: "^1.0.2",
+    oxfmt: "^0.56.0",
+    typescript: "^6.0.3"
+}
+
 export function packageJsonTemplate(): string {
     return `${JSON.stringify(
         {
@@ -29,14 +38,9 @@ export function packageJsonTemplate(): string {
                 "cursor:pub": "ovsx publish <.vsix>"
             },
             dependencies: {
-                hokit: "latest"
+                hokit: `^${VERSION}`
             },
-            devDependencies: {
-                "@vscode/vsce": "latest",
-                ovsx: "latest",
-                oxfmt: "latest",
-                typescript: "latest"
-            },
+            devDependencies: DevDependencyVersions,
             contributes: {
                 snippets: [
                     {

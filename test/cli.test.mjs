@@ -103,16 +103,24 @@ test("all CLI commands work in a real project", async () => {
             await readFile(join(project, ".editorconfig"), "utf8"),
             /indent_size = 4/
         )
+        const initializedPackageJson = JSON.parse(
+            await readFile(join(project, "package.json"), "utf8")
+        )
+        assert.equal(initializedPackageJson.name, "my-snippets")
         assert.equal(
-            JSON.parse(await readFile(join(project, "package.json"), "utf8"))
-                .name,
-            "my-snippets"
+            initializedPackageJson.dependencies.hokit,
+            `^${packageVersion}`
         )
         assert.equal(
-            JSON.parse(await readFile(join(project, "package.json"), "utf8"))
-                .contributes.snippets[0].path,
-            ""
+            initializedPackageJson.devDependencies.typescript,
+            "^6.0.3"
         )
+        assert.notEqual(initializedPackageJson.dependencies.hokit, "latest")
+        assert.notEqual(
+            initializedPackageJson.devDependencies["@vscode/vsce"],
+            "latest"
+        )
+        assert.equal(initializedPackageJson.contributes.snippets[0].path, "")
         assert.match(
             await readFile(join(project, "hokit.config.ts"), "utf8"),
             /presets:\s*\[\]/

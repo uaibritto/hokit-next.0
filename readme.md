@@ -180,7 +180,7 @@ Using `@Todo` without `@Snippet` is an error.
 
 ### `hokit init`
 
-Initializes a new project and installs dependencies using the first available package manager in this order:
+Initializes a new project, writes concrete dependency ranges instead of `latest`, and installs dependencies using the first available package manager in this order:
 
 1. `bun`
 2. `nub`
