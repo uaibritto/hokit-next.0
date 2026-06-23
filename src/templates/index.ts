@@ -1,7 +1,6 @@
 export * from "./editorconfig"
 export * from "./gitignore"
 export * from "./hokit-config"
-export * from "./modules/empty"
 export * from "./modules/custom"
 export * from "./modules/language"
 export * from "./modules/registry"

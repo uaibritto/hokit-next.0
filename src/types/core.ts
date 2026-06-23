@@ -21,8 +21,7 @@ export const PRESETS = {
     julia: "julia",
     lua: "lua",
     perl: "perl",
-    shellscript: "shellscript",
-    empty: "empty"
+    shellscript: "shellscript"
 } as const
 
 export type Preset = (typeof PRESETS)[keyof typeof PRESETS]

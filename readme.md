@@ -143,9 +143,12 @@ Built-in presets:
 - `c`
 - `cpp`
 - `javascript`
-- `empty`
 
 Each preset generates one file using the global `output` directory.
+
+### Migration note
+
+The previous `empty` preset was removed because editors such as VS Code and Cursor do not provide an `empty` snippet scope. Use a real language preset, or define a custom preset through `extend.presets` when you need project-specific scopes.
 
 ## Modules and snippets
 
@@ -305,7 +308,7 @@ hokit info
 
 ### `hokit watch`
 
-Runs an initial build and rebuilds when source files change.
+Runs an initial build and rebuilds when module files, template files, or `hokit.config.ts` change.
 
 ```sh
 hokit watch
@@ -320,6 +323,16 @@ hokit help
 hokit --help
 hokit --version
 ```
+
+## Release checks
+
+Before publishing a new version, run:
+
+```sh
+pnpm release:check
+```
+
+This formats the codebase, type-checks it, runs the integration tests, audits dependencies, and performs an npm pack dry run.
 
 ## Validator decorators
 

@@ -1,11 +1,31 @@
+import { resolve } from "node:path"
+
 import { build } from "@hokit/build/build"
+import { loadConfig } from "@hokit/config/load-config"
+import { resolveProjectPath } from "@hokit/filesystem/resolve-project-path"
 import { logger } from "@hokit/logger"
 import type { BuildConfig } from "@hokit/types"
-import chokidar from "chokidar"
+import chokidar, { type FSWatcher } from "chokidar"
 
-export async function watchProject(config: BuildConfig) {
+export async function watchProject(root = process.cwd()) {
     let running = false
     let queued = false
+    let watcher: FSWatcher | undefined
+    const watched = new Set([
+        resolve(root, "hokit.config.ts"),
+        resolve(root, "src/templates")
+    ])
+
+    const loadBuildConfig = async (): Promise<BuildConfig> => {
+        const config = await loadConfig(root)
+        const modulesDirectory = resolveProjectPath(root, config.cwd, {
+            allowRoot: true
+        })
+        watched.add(modulesDirectory)
+        watcher?.add(modulesDirectory)
+
+        return config
+    }
 
     const rebuild = async () => {
         if (running) {
@@ -18,6 +38,7 @@ export async function watchProject(config: BuildConfig) {
         do {
             queued = false
             try {
+                const config = await loadBuildConfig()
                 const result = await build(config)
                 logger.success(
                     `Built ${result.modules} module(s) into ${result.outputs.length} file(s).`
@@ -32,7 +53,7 @@ export async function watchProject(config: BuildConfig) {
 
     await rebuild()
 
-    const watcher = chokidar.watch(config.cwd, {
+    watcher = chokidar.watch([...watched], {
         ignoreInitial: true,
         ignored: "**/.hokit-*.ts",
         usePolling: true,
@@ -50,7 +71,7 @@ export async function watchProject(config: BuildConfig) {
     watcher.on("error", (error) => logger.error(error))
 
     await new Promise<void>((resolveReady) =>
-        watcher.once("ready", resolveReady)
+        watcher?.once("ready", resolveReady)
     )
     logger.info("Watching files...")
 

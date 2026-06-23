@@ -1,6 +1,6 @@
 {
     "name": "hokit",
-    "version": "4.0.5",
+    "version": "4.1.0",
     "description": "A declarative snippet compiler based on decorators.",
     "keywords": [
         "cursor",
@@ -43,7 +43,8 @@
         "check": "tsc --noEmit",
         "format": "oxfmt",
         "prepack": "tsdown",
-        "test": "pnpm build && node --test"
+        "release:check": "pnpm format && pnpm check && pnpm test && pnpm audit --audit-level high && npm pack --dry-run",
+        "test": "pnpm build && node --test test/*.test.mjs"
     },
     "dependencies": {
         "chokidar": "^5.0.0",

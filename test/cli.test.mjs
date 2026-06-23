@@ -9,83 +9,18 @@ import {
     symlink,
     writeFile
 } from "node:fs/promises"
-import { delimiter, join, resolve } from "node:path"
+import { delimiter, join } from "node:path"
 import { test } from "node:test"
 
-const root = resolve(import.meta.dirname, "..")
-const cli = join(root, "dist/cli/index.js")
-const packageVersion = JSON.parse(
-    await readFile(join(root, "package.json"), "utf8")
-).version
-
-function run(cwd, ...args) {
-    return runWithEnvironment(cwd, args)
-}
-
-function runWithEnvironment(cwd, args, environment = {}) {
-    return new Promise((resolveRun) => {
-        const child = spawn(process.execPath, [cli, ...args], {
-            cwd,
-            env: {
-                ...process.env,
-                HOKIT_SKIP_INSTALL: "1",
-                NO_COLOR: "1",
-                ...environment
-            }
-        })
-        let stdout = ""
-        let stderr = ""
-        child.stdout.on("data", (chunk) => (stdout += chunk))
-        child.stderr.on("data", (chunk) => (stderr += chunk))
-        child.on("close", (code) => resolveRun({ code, stderr, stdout }))
-    })
-}
-
-function runConsumerTypecheck(cwd) {
-    return new Promise((resolveRun) => {
-        const child = spawn(
-            process.execPath,
-            [
-                join(root, "node_modules/typescript/bin/tsc"),
-                "--noEmit",
-                "--project",
-                join(cwd, "tsconfig.json")
-            ],
-            { cwd }
-        )
-        let stdout = ""
-        let stderr = ""
-        child.stdout.on("data", (chunk) => (stdout += chunk))
-        child.stderr.on("data", (chunk) => (stderr += chunk))
-        child.on("close", (code) => resolveRun({ code, stderr, stdout }))
-    })
-}
-
-function waitForOutput(child, expected, timeout = 5_000) {
-    return new Promise((resolveWait, reject) => {
-        let output = ""
-        const timer = setTimeout(
-            () =>
-                reject(
-                    new Error(`Timed out waiting for: ${expected}\n${output}`)
-                ),
-            timeout
-        )
-        const inspect = (chunk) => {
-            output += chunk
-            if (output.includes(expected)) {
-                clearTimeout(timer)
-                resolveWait(output)
-            }
-        }
-        child.stdout.on("data", inspect)
-        child.stderr.on("data", inspect)
-        child.once("exit", (code) => {
-            clearTimeout(timer)
-            reject(new Error(`Watch exited with code ${code}.\n${output}`))
-        })
-    })
-}
+import {
+    cli,
+    packageVersion,
+    root,
+    run,
+    runConsumerTypecheck,
+    runWithEnvironment,
+    waitForOutput
+} from "./helpers.mjs"
 
 test("all CLI commands work in a real project", async () => {
     const project = await mkdtemp(join(root, ".hokit-test-"))
@@ -107,15 +42,16 @@ test("all CLI commands work in a real project", async () => {
             await readFile(join(project, "package.json"), "utf8")
         )
         assert.equal(initializedPackageJson.name, "my-snippets")
+        assert.equal(initializedPackageJson.dependencies, undefined)
         assert.equal(
-            initializedPackageJson.dependencies.hokit,
+            initializedPackageJson.devDependencies.hokit,
             `^${packageVersion}`
         )
         assert.equal(
             initializedPackageJson.devDependencies.typescript,
             "^6.0.3"
         )
-        assert.notEqual(initializedPackageJson.dependencies.hokit, "latest")
+        assert.notEqual(initializedPackageJson.devDependencies.hokit, "latest")
         assert.notEqual(
             initializedPackageJson.devDependencies["@vscode/vsce"],
             "latest"
@@ -174,8 +110,7 @@ test("all CLI commands work in a real project", async () => {
             "zig",
             "c",
             "cpp",
-            "javascript",
-            "empty"
+            "javascript"
         ]
         for (const preset of availablePresets) {
             assert.match(result.stdout, new RegExp(`^${preset}$`, "m"))
@@ -215,7 +150,7 @@ test("all CLI commands work in a real project", async () => {
         assert.equal(result.code, 0, result.stderr)
         assert.match(
             await readFile(join(project, "src/templates/tsx/rfc.ts"), "utf8"),
-            /export const rfc = \[""\]/
+            /export const rfc = \[\]/
         )
         assert.match(
             await readFile(join(project, "src/templates/tsx/index.ts"), "utf8"),
@@ -288,21 +223,13 @@ test("all CLI commands work in a real project", async () => {
         assert.match(jsxModule, /Snippet, Todo, type SnippetDefinition/)
         assert.match(jsxModule, /@Todo\(""\)\n\s+@Snippet/)
 
-        result = await run(project, "module", "--empty")
-        assert.equal(result.code, 0, result.stderr)
-        assert.match(
-            await readFile(configPath, "utf8"),
-            /presets:\s*\["tsx", "jsx", "empty"\]/
-        )
-
-        const emptyModule = join(project, "src/modules/empty.ts")
-        assert.doesNotMatch(await readFile(emptyModule, "utf8"), /@Todo/)
+        const fixModule = join(project, "src/modules/fix.ts")
         await writeFile(
-            emptyModule,
+            fixModule,
             `import { Module, Snippet, type SnippetDefinition } from "hokit"
 
-@Module({ preset: "empty" })
-export class EmptyModule {
+@Module({ preset: "tsx" })
+export class FixModule {
     @Snippet({ name: " Padded ", prefix: " pad ", body: [], template: true })
     declare example: SnippetDefinition
 }
@@ -312,7 +239,7 @@ export class EmptyModule {
         result = await run(project, "lint", "--fix")
         assert.equal(result.code, 0, result.stderr)
         assert.match(result.stdout, /Fixed 1 module file/)
-        const fixed = await readFile(emptyModule, "utf8")
+        const fixed = await readFile(fixModule, "utf8")
         assert.match(fixed, /name: "Padded"/)
         assert.match(fixed, /body: \["\$0"\]/)
 
@@ -392,12 +319,9 @@ export class TsxExtraModule {
         const tsxOutput = JSON.parse(
             await readFile(join(project, "dist/snippets/tsx.json"), "utf8")
         )
-        const emptyOutput = JSON.parse(
-            await readFile(join(project, "dist/snippets/empty.json"), "utf8")
-        )
         assert.ok(tsxOutput["React Functional Component"])
         assert.ok(tsxOutput["React Arrow Component"])
-        assert.ok(emptyOutput.Padded)
+        assert.ok(tsxOutput.Padded)
         assert.equal(
             tsxOutput["React Functional Component"].scope,
             "typescriptreact"
@@ -410,7 +334,7 @@ export class TsxExtraModule {
             tsxOutput["React Functional Component"].isFileTemplate,
             false
         )
-        assert.equal(emptyOutput.Padded.isFileTemplate, true)
+        assert.equal(tsxOutput.Padded.isFileTemplate, true)
         assert.deepEqual(
             JSON.parse(
                 await readFile(
@@ -466,6 +390,7 @@ export class TsxExtraModule {
         assert.equal(result.code, 0, result.stderr)
         await assert.rejects(readFile(join(project, "dist/snippets/tsx.json")))
 
+        const configBeforeWatch = await readFile(configPath, "utf8")
         const watch = spawn(process.execPath, [cli, "watch"], {
             cwd: project,
             env: { ...process.env, NO_COLOR: "1" }
@@ -487,8 +412,37 @@ export class TsxExtraModule {
                 "utf8"
             )
             assert.match(watchedOutput, /rfc2/)
+
+            const templateRebuilt = waitForOutput(watch, "Changes detected.")
+            await writeFile(
+                join(project, "src/templates/tsx/rfc.ts"),
+                'export const rfc = ["watch-template"]\n'
+            )
+            await templateRebuilt
+            await new Promise((resolveDelay) => setTimeout(resolveDelay, 300))
+            assert.match(
+                await readFile(join(project, "dist/snippets/tsx.json"), "utf8"),
+                /watch-template/
+            )
+
+            const configRebuilt = waitForOutput(watch, "Changes detected.")
+            await writeFile(
+                configPath,
+                configBeforeWatch.replace(
+                    'output: "dist/snippets"',
+                    'output: "dist/watch-config"'
+                )
+            )
+            await configRebuilt
+            await new Promise((resolveDelay) => setTimeout(resolveDelay, 300))
+            const configWatchedOutput = await readFile(
+                join(project, "dist/watch-config/tsx.json"),
+                "utf8"
+            )
+            assert.match(configWatchedOutput, /rfc2/)
         } finally {
             watch.kill("SIGTERM")
+            await writeFile(configPath, configBeforeWatch)
         }
 
         result = await run(project, "help")

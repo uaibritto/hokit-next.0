@@ -1,6 +1,6 @@
 import type { Preset } from "@hokit/types"
 
-type LanguagePreset = Exclude<Preset, "empty">
+type LanguagePreset = Preset
 
 interface LanguageTemplateConfig {
     acronym: string

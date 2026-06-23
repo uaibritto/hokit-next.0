@@ -14,7 +14,6 @@ export const Presets: Record<Preset, PresetConfig> = {
     c: CONFIGS.c,
     cpp: CONFIGS.cpp,
     javascript: CONFIGS.javascript,
-    empty: CONFIGS.empty,
     csharp: CONFIGS.csharp,
     dart: CONFIGS.dart,
     go: CONFIGS.go,

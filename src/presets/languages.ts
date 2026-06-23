@@ -29,6 +29,5 @@ export const CONFIGS = {
     julia: languagePreset("julia"),
     lua: languagePreset("lua"),
     perl: languagePreset("perl"),
-    shellscript: languagePreset("shell"),
-    empty: languagePreset("typescript")
+    shellscript: languagePreset("shell")
 }
